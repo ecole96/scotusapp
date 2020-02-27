@@ -212,7 +212,7 @@ class Scraper:
             d = soup.find("meta",property="article:published_time")
             if d:
                 datestr = d.get("content").strip()
-                if datestr[-4] == ".": datestr = datestr[:-4]
+                if "." in datestr: datestr = datestr.split(".")[0]
                 self.date = tz.fromutc(datetime.datetime.strptime(datestr,"%Y-%m-%dT%H:%M:%S")).strftime("%Y-%m-%d %H:%M:%S")
         if not self.images:
             i = soup.select_one("div.ArticlePage-lead img")
