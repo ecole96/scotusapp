@@ -164,7 +164,7 @@
                         <span class="field-header">Source</span><br><?php echo !empty($row['source']) ? $row['source'] : "N/A"; ?><br><br>
                         <span class="field-header">Publication Date</span><br><?php echo !empty($row['datetime']) ? $row['datetime'] : "N/A"; ?><br><br>
                         <span class="field-header">URL</span><br><?php echo !empty($row['url']) ? "<a href='{$row['url']}'>{$row['url']}</a>" : "N/A"; ?><br><br>
-                        <span class="field-header">Relevancy: <?php echo isset($row['score']) ? round($row['relevancy_score'],4) : "N/A"; ?></span><br><br>
+                        <span class="field-header">Relevancy: <?php echo isset($row['relevancy_score']) ? round($row['relevancy_score'],4) : "N/A"; ?></span><br><br>
                         <span class="field-header">Sentiment: <?php echo isset($row['score']) ? $row['score'] : "N/A"; ?></span><br>
                         <span class="field-header">Magnitude: <?php echo isset($row['magnitude']) ? $row['magnitude'] : "N/A"; ?></span><br><br>
                         <?php
