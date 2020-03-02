@@ -33,7 +33,7 @@
         $csv = fopen($csvName, 'w') or die ("Unable to generate CSV: " . $csvName);
 
         // CSV column headers
-        $headers = array("Article ID", "Alt ID", "Date/Time", "Source", "MBFS Bias","MBFS Score","MBFS Factual Reporting", "AllSides Bias","AllSides Confidence","AllSides Agreement","AllSides Disagreement","URL","Title","Author","Sentiment Score","Sentiment Magnitude","Top Image Entity","Entity Score","Keywords");
+        $headers = array("Article ID", "Alt ID", "Date/Time", "Source", "MBFS Bias","MBFS Score","MBFS Factual Reporting", "AllSides Bias","AllSides Confidence","AllSides Agreement","AllSides Disagreement","URL","Title","Author","Relevancy Score","Sentiment Score","Sentiment Magnitude","Top Image Entity","Entity Score","Keywords");
         $metric_headers = array("FB Reactions"=>"fb_reactions","FB Comments"=>"fb_comments","FB Shares"=>"fb_shares","FB Comment Plugin"=>"fb_comment_plugin", 
                          "TW Tweets"=>"tw_tweets","TW Total Favorites"=>"tw_favorites","TW Total Retweets"=>"tw_retweets","TW Top Favorites"=>"tw_top_favorites","TW Top Retweets"=>"tw_top_retweets",
                          "RDT Posts"=>"rdt_posts","RDT Total Comments"=>"rdt_total_comments","RDT Total Scores"=>"rdt_total_scores","RDT Top Comments"=>"rdt_top_comments",
@@ -47,7 +47,7 @@
         while ($row = mysqli_fetch_assoc($query)) {
             $altID = $row['date'] . '_' . sprintf("%03d",$row['n']); // alternate ID as requested in Y-m-d_n format, where n is the Nth article of its publishing date (sorted by idArticle ascending) [n is 3 digits, with leading zeroes as necessary]
             $data = array($row['idArticle'],$altID,$row['datetime'], $row['source'],$row['mbfs_bias'],$row['mbfs_score'],$row['factual_reporting'],$row['allsides_bias'],$row['allsides_confidence'],$row['allsides_agree'],
-                        $row['allsides_disagree'],  $row['url'], $row['title'], $row['author'], $row['score'],$row['magnitude'],
+                        $row['allsides_disagree'],  $row['url'], $row['title'], $row['author'], $row['relevancy_score'],$row['score'],$row['magnitude'],
                         $row['top_entity'],$row['top_entity_score'],$row['keywords']);
             foreach($metric_headers as $header=>$colname) { // dynamically adding social media metric data
                 array_push($data,$row["$colname" . "_initial"]); array_push($data,$row["$colname" . "_d1"]); array_push($data,$row["$colname" . "_d7"]); 

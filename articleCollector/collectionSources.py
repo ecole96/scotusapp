@@ -49,13 +49,17 @@ class TopicSites:
                     article = p.scrape(c,driver,tz)
                     if article:
                         article.printInfo()
-                        if article.isRelevant_exp(clf,v_text,v_title,c,False):
+                        if article.isRelevant(clf,v_text,v_title):
                             # add to database
                             article.addToDatabase(c,smm)
                             article.printAnalysisData()
                             successes += 1
-                            print()
-                            print("Added to database")
+                            print("\nAdded to database")
+                        else:
+                            collectTrainingData = False
+                            print("\nRejected - not classified as relevant [ " + article.code + " ]")
+                            if collectTrainingData:
+                                article.buildRejectedTrainingData(c)
             except MySQLdb.Error as e:
                 print("Database Error (operation skipped) -",e)         
             print("=================================")
@@ -477,13 +481,17 @@ class RSSFeeds:
                             article = s.scrape(c,driver,tz)
                             if article:
                                 article.printInfo()
-                                if article.isRelevant_exp(clf,v_text,v_title,c,False):
+                                if article.isRelevant(clf,v_text,v_title):
                                     # add to database
                                     article.addToDatabase(c,smm)
                                     article.printAnalysisData()
                                     successes += 1
-                                    print()
-                                    print("Added to database")
+                                    print("\nAdded to database")
+                                else:
+                                    collectTrainingData = False
+                                    print("\nRejected - not classified as relevant [ " + article.code + " ]")
+                                    if collectTrainingData:
+                                        article.buildRejectedTrainingData(c)
                 except MySQLdb.Error as e:
                     print("Database Error (operation skipped) -",e)
                 print("======================================")
@@ -539,13 +547,17 @@ class NewsAPICollection:
                             article = s.scrape(c,driver,tz)
                             if article:
                                 article.printInfo()
-                                if article.isRelevant_exp(clf,v_text,v_title,c,False):
+                                if article.isRelevant(clf,v_text,v_title):
                                     # add to database
                                     article.addToDatabase(c,smm)
                                     article.printAnalysisData()
                                     successes += 1
-                                    print()
-                                    print("Added to database")
+                                    print("\nAdded to database")
+                                else:
+                                    collectTrainingData = False
+                                    print("\nRejected - not classified as relevant [ " + article.code + " ]")
+                                    if collectTrainingData:
+                                        article.buildRejectedTrainingData(c)
                 except MySQLdb.Error as e:
                     print("Database Error (operation skipped) -",e)
                 print("======================================")

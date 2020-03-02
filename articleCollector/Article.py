@@ -32,6 +32,8 @@ class Article:
         self.keywords = self.getKeywords()
         self.sentimentScore = None
         self.magnitude = None
+        self.code = None
+        self.class_score = None
         self.images = []
         for imageURL in imageURLs:
             image = Image(imageURL)
@@ -45,7 +47,6 @@ class Article:
         print("Date:",self.date)
         print("Keywords:",self.keywords)
         print("Number of characters:",len(self.text))
-        #print("Text:\n" + self.text)
 
     # prints analysis data to script output
     def printAnalysisData(self):
@@ -139,12 +140,12 @@ class Article:
         self.analyzeSentiment(c)
         self.metrics = smm.get_metrics(self.url)
         # insert new Article row
-        t = tuple([self.url, self.source, self.author, self.date, self.text, self.title, self.sentimentScore, self.magnitude] + list(self.metrics.values()))
-        c.execute("""INSERT INTO article(url, source, author, datetime, article_text, title, score, magnitude,
+        t = tuple([self.url, self.source, self.author, self.date, self.text, self.title, self.sentimentScore, self.magnitude, self.class_score] + list(self.metrics.values()))
+        c.execute("""INSERT INTO article(url, source, author, datetime, article_text, title, score, magnitude, relevancy_score,
                      fb_reactions_initial,fb_comments_initial,fb_shares_initial,fb_comment_plugin_initial,
                      tw_tweets_initial,tw_favorites_initial,tw_retweets_initial,tw_top_favorites_initial,tw_top_retweets_initial,
                      rdt_posts_initial,rdt_total_comments_initial,rdt_total_scores_initial,rdt_top_comments_initial,rdt_top_score_initial,rdt_top_ratio_initial,rdt_avg_ratio_initial) 
-                     VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",t)
+                     VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",t)
 
         # then insert the other stuff (keywords and images)
         idArticle = c.lastrowid # article id needed for keywords, images, and storing txt file
@@ -196,12 +197,10 @@ class Article:
 
     # checking whether an article pertains to a foreign supreme court - True if so, False if not
     # very similar to stateCourtDetected()
-    def foreignCourtDetected(self,c,collectTrainingData):
+    def foreignCourtDetected(self):
         foreignSources = ['indiatimes','thehindu','liberianobserver',"allafrica",'vanguardngr','firstpost','ndtv','news18','moneycontrol','newzimbabwe'] # sources that near exclusively (if not entirely) report on foreign supreme court news, so blocking them manually here
         if self.source.lower() in foreignSources or ('india' in self.url.lower() and 'indiana' not in self.url.lower()): # indian supreme court pops ups a lot, so block any source with "india" in it ("indiana" still passes)
-            print("Rejected - from a known foreign source")
-            if collectTrainingData:
-                self.buildRejectedTrainingData("F",c)
+            print("Known foreign source detected")
             return True
 
         # dict in key:[] format where key is country, [] consists of the country's demonyms that could be used to refer to a foreign court (Russia Supreme Court = Russian Supreme Court, etc.)
@@ -251,15 +250,13 @@ class Article:
                     terms.append(d)
             comparisons = self.generate_court_terms(terms)
             if any(c in processed_title or c in openingText for c in comparisons):
-                print("Rejected - likely a foreign supreme court")
-                if collectTrainingData:
-                    self.buildRejectedTrainingData("F",c)
+                print("Article likely about a foreign Supreme Court")
                 return True
         return False
     
     # determine whether the focus of an article is about a state Supreme Court - returns True if deemed so, False otherwise
     # done by parsing the title and part of the text for giveaway terms ("[state] Supreme Court", "[state] high court", "[state] top court"...)
-    def stateCourtDetected(self,c,collectTrainingData):
+    def stateCourtDetected(self):
         # dict in key:[] format where key is state and [] consists of common state abbreviations
         states = {'alaska': ['ak'], 'alabama': ['al','ala'], 'arkansas': ['ar'], 'arizona': ['az','ariz'], 'california': ['ca','calif'], 'colorado': ['co'], 'connecticut': ['ct'], 'delaware': ['de'], 
         'florida': ['fl','fla'], 'georgia': ['ga'], 'hawaii': ['hi'], 'iowa': ['ia'], 'idaho': ['id'], 'illinois': ['il'], 'indiana': ['in'], 'kansas': ['ks'], 
@@ -285,59 +282,58 @@ class Article:
             comparisons = self.generate_court_terms(terms)
             # only checking for terms containing a full state string in the full text (first 3 elements of comparisons array) to avoid false positives
             if any(c in processed_title or (c in openingText and i < 3) for i,c in enumerate(comparisons)):  
-                print("Rejected - Article likely about a state supreme court")
-                if collectTrainingData:
-                    self.buildRejectedTrainingData("S",c)
+                print("Article likely about a state supreme court")
                 return True
         return False
     
+    # if we can't determine relevancy with giveaways in the text or title, then determine using our text classifier
+    def classify(self,clf,v_text,v_title,justice_keys):
+        Xraw = [[self.title, self.text]]
+        X = convertTextData(Xraw,v_text,v_title,'test')
+        predict_probs = clf.predict_proba(X)[0] # array of probabilities for each classification
+        prob_by_class = dict(zip(clf.classes_,predict_probs)) # zip probabilities to their according class
+        sorted_probs = sorted(prob_by_class.items(),key=lambda kv: kv[1],reverse=True) # sort dict into an array of tuples most to least probable by class format: [(class,probability)]
+        print("Class probabilities:",sorted_probs)
+        self.code = sorted_probs[0][0] # initial / highest classification
+        self.class_score = sorted_probs[0][1] # highest probability
+        if self.code == 'R': 
+            # our classification is very good but not perfect
+            # to account for false negatives, if an article is classified as relevant but certain keywords do not exist, then the classifier must be extra sure (higher probability) it is relevant before truly deeming it relevant
+            # this is called our "relevancy threshold" test
+            if not (('supreme' in self.keywords and 'court' in self.keywords) or 'scotus' in self.keywords) and not any(justice in self.keywords for justice in justice_keys): 
+                relevancy_threshold = 0.75 # numbers subject to change (still trying to find a "sweet spot" but this seems to do well)
+            else:
+                relevancy_threshold = 0.5
+            if self.class_score < relevancy_threshold:
+                print("Relevancy threshold test failed - reclassifying...")
+                self.code = sorted_probs[1][0] # if article fails threshold test, then finally classify it as the second most likely class
+                self.class_score = sorted_probs[1][1] 
+
     # relevancy check function - True for relevant, False otherwise
-    def isRelevant_exp(self,clf,v_text,v_title,c,collectTrainingData):
+    def isRelevant(self,clf,v_text,v_title):
         instantTerms = ["usa supreme court", "us supreme court", "u.s. supreme court", "united states supreme court", "scotus",
                     'john roberts', 'anthony kennedy', 'clarence thomas', 'ruth bader ginsburg', 'stephen breyer', 
                     'samuel alito', 'sonia sotomayor', 'elena kagan', 'neil gorsuch', 'brett kavanaugh', "antonin scalia"] # dead giveaways for relevancy
         justice_keys = ['roberts', 'kennedy', 'thomas', 'ginsburg', 'breyer', 'alito', 
                         'sotomayor', 'kagan', 'gorsuch', 'kavanaugh','scalia'] # last names of the justices for parsing in keywords
-        # check for the "dead giveaways"
         instantSources = ["scotusblog"]
-        if any(term in self.title.lower() for term in (instantTerms + justice_keys)) or self.source in instantSources: 
-            return True
+        # check for the "dead giveaways"
+        if any(term in self.title.lower() for term in (instantTerms + justice_keys)) or self.source in instantSources:
+            self.code = "R"
+            self.class_score = 1.0
+        elif self.stateCourtDetected() or self.foreignCourtDetected():
+            self.code = "U"
+            self.class_score = 1.0
         else:
-            if self.stateCourtDetected(c,collectTrainingData) or self.foreignCourtDetected(c,collectTrainingData):
-                return False
-            else:
-                Xraw = [[self.title, self.text]]
-                X = convertTextData(Xraw,v_text,v_title,'test')
-                predict_probs = clf.predict_proba(X)[0] # array of probabilities for each classification
-                prob_by_class = dict(zip(clf.classes_,predict_probs)) # zip probabilities to their according class
-                sorted_probs = sorted(prob_by_class.items(),key=lambda kv: kv[1],reverse=True) # sort dict into an array of tuples most to least probable by class format: [(class,probability)]
-                print("Class probabilities:",sorted_probs)
-                result = sorted_probs[0][0] # initial / highest classification
-                result_prob = sorted_probs[0][1] # highest probability
-                if result == 'R': 
-                    # our classification is very good but not perfect
-                    # to account for false negatives, if an article is classified as relevant but certain keywords do not exist, then the classifier must be extra sure (higher probability) it is relevant before truly deeming it relevant
-                    # this is called our "relevancy threshold" test
-                    if not (('supreme' in self.keywords and 'court' in self.keywords) or 'scotus' in self.keywords) and not any(justice in self.keywords for justice in justice_keys): 
-                        relevancy_threshold = 0.75 # numbers subject to change (still trying to find a "sweet spot" but this seems to do well)
-                    else:
-                        relevancy_threshold = 0.5
-                    if result_prob >= relevancy_threshold:
-                        return True
-                    else:
-                        print("Relevancy threshold test failed - reclassifying...")
-                        result = sorted_probs[1][0] # if article fails threshold test, then finally classify it as the second most likely class
-                print("Rejected - not classified as relevant [ " + result + " ]")
-                if collectTrainingData:
-                    self.buildRejectedTrainingData(result,c)
-                return False
+            self.classify(clf,v_text,v_title,justice_keys)    
+        return self.code == "R"
 
     # insert irrelevant article data into the database for training purposes
     # data is coded by nature of irrelevancy; S = article is about state/lower court, F = article is about foreign court, U = unrelated topic
-    def buildRejectedTrainingData(self,code,c):
-        t = (self.url, self.date, self.text, self.title, code, ','.join(self.keywords))
-        c.execute("""INSERT INTO rejectedTrainingData(url, datetime, text, title, code, keywords) VALUES (%s,%s,%s,%s,%s,%s)""",t)
-        print("Article added to training data with code",code)
+    def buildRejectedTrainingData(self,c):
+        t = (self.url, self.date, self.text, self.title, self.code, self.class_score,','.join(self.keywords))
+        c.execute("""INSERT INTO rejectedTrainingData(url, datetime, text, title, code, class_score, keywords) VALUES (%s,%s,%s,%s,%s,%s,%s)""",t)
+        print("Article added to training data with code",self.code)
 
     # increment sentiment requests counter in database
     def updateSentimentRequests(self,n,c):

@@ -138,7 +138,7 @@
                     <div id="details" class="box">
                         <span class="box-header">Details</span><br><br>
                         <?php $row = mysqli_fetch_assoc($details_query) ?>
-                        <span class="field-header">ID: <?php echo isset($row['idArticle']) ? $row['idArticle'] : "N/A"; ?></span><br><br>
+                        <span class="field-header">ID: <?php echo isset($row['idArticle']) ? $row['idArticle'] : "N/A"; ?></span><br>
                         <span class="field-header">Alt ID:
                             <?php
                                 // alt ID could have been calculated within a larger details query,  but I think that query would actually be slower - so we're doing a separate query here
@@ -164,7 +164,8 @@
                         <span class="field-header">Source</span><br><?php echo !empty($row['source']) ? $row['source'] : "N/A"; ?><br><br>
                         <span class="field-header">Publication Date</span><br><?php echo !empty($row['datetime']) ? $row['datetime'] : "N/A"; ?><br><br>
                         <span class="field-header">URL</span><br><?php echo !empty($row['url']) ? "<a href='{$row['url']}'>{$row['url']}</a>" : "N/A"; ?><br><br>
-                        <span class="field-header">Sentiment Score: <?php echo isset($row['score']) ? $row['score'] : "N/A"; ?></span><br>
+                        <span class="field-header">Relevancy: <?php echo isset($row['score']) ? round($row['relevancy_score'],4) : "N/A"; ?></span><br><br>
+                        <span class="field-header">Sentiment: <?php echo isset($row['score']) ? $row['score'] : "N/A"; ?></span><br>
                         <span class="field-header">Magnitude: <?php echo isset($row['magnitude']) ? $row['magnitude'] : "N/A"; ?></span><br><br>
                         <?php
                             if(!empty($row)) { // if article exists, show irrelevancy marking functionality
