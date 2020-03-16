@@ -373,7 +373,7 @@ class Scraper:
         if not self.date:
             d = soup.find("meta",{"name":"date"})
             if d and d.get("content"): 
-                datestr = d.get("content").split(".")[0].strip()
+                datestr = d.get("content").split(".")[0].strip().replace("Z","")
                 self.date = tz.fromutc(datetime.datetime.strptime(datestr,"%Y-%m-%dT%H:%M:%S")).strftime("%Y-%m-%d %H:%M:%S")
         if not self.images:
             i = soup.find("meta",property="og:image")
@@ -381,7 +381,7 @@ class Scraper:
                 image = i.get("content")
                 if 'logo' not in image: self.images.append(image) # if an article doesn't have an image, the ChiTribune logo is used so ignore it
         text = ''
-        paragraphs = soup.find_all("div",{"data-type":"text"})
+        paragraphs = soup.find_all("div",{"data-type":["text","header"]})
         for p in paragraphs: text += (p.text.strip() + '\n\n')
         if text == '':
             print("Text is empty - likely bad scraping job (no article text)")
