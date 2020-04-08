@@ -49,7 +49,7 @@ class SeleniumInstance:
                 self.driver.find_element_by_name("username").send_keys(os.environ['WSJ_EMAIL']) # send credentials
                 self.driver.find_element_by_name("password").send_keys(os.environ['WSJ_PASSWORD'])
                 self.driver.find_element_by_css_selector("button.basic-login-submit").click() # login
-                element_present = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,"a.style--fullname--3RYDOD92 "))) # wait until username appears on WSJ homepage after login to confirm login status
+                element_present = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,"#customer-nav-full-name"))) # wait until username appears on WSJ homepage after login to confirm login status
                 self.loginStates['wsj'] = (True,True)
             except Exception as e:
                 print("WSJ Login Error: ",e)
