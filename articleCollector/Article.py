@@ -8,6 +8,7 @@ import math
 import datetime
 from utilityFunctions import untitledArticle
 from utilityFunctions import convertTextData
+from scipy.spatial.distance import pdist, squareform
 
 # class for article
 # needs to add database/image/analysis functions
@@ -39,6 +40,7 @@ class Article:
             image = Image(imageURL)
             self.images.append(image)
         self.metrics = {}
+        self.similar_articles = []
 
     # prints Article info to script output
     # title and URL are located in printBasicInfo() in UtilityFunctions.py, because we need to check those before we ever create an Article object
@@ -54,6 +56,9 @@ class Article:
             print("Sentiment Score & Magnitude:",str(round(self.sentimentScore,3)) + ",",round(self.magnitude,3))
         print("Social Media Metrics:",self.metrics)
         print()
+        if self.similar_articles:
+            print("Similar Articles:",self.similar_articles)
+            print()
         for index, image in enumerate(self.images):
             if image.filename:
                 filestr = "Saved as " + image.filename
@@ -95,12 +100,39 @@ class Article:
 
     # checks whether a keyword is already in the database
     # same implementation as the article check, just specific to keywords
-    def keywordIsDuplicate(self,key, c):
+    def keywordIsDuplicate(self,key,c):
         c.execute("""SELECT idKey FROM article_keywords WHERE keyword = %s""",(key,))
         if c.rowcount == 0:
             return False
         else:
             return True
+
+    # generates articles similar to the new article being entered in the database
+    # for performance reasons, it only checks RECENT articles (within the last 3 days of the new article's publication date [time not considered])
+    # stored in the database for long-term use
+    # but also stored in the Article object as a list of tuples in the format of (similar article's ID, similarity score) so we can display results in the script
+    # the closer a similarity score is to 1, the more similar two articles are
+    def generate_similar_articles(self,c,idArticle,v_simtext):
+        texts = [self.text]
+        IDs = [idArticle]
+        ymd_date = self.date.split()[0] # our datetimes follow Y-m-d H:M:S format, so just split by whitespace
+        n_days = 3
+        c.execute("""SELECT idArticle,article_text 
+                     FROM article 
+                     WHERE idArticle <> %s AND date(datetime) BETWEEN DATE_SUB(%s, INTERVAL %s DAY) AND %s 
+                     ORDER BY idArticle DESC""",(idArticle,ymd_date,n_days,ymd_date,)) # gather recent article data
+        row = c.fetchone()
+        while row:
+            IDs.append(row['idArticle'])
+            texts.append(row['article_text'])
+            row = c.fetchone()
+        X = v_simtext.fit_transform(texts)
+        # calculate cosine similarity (this comes in the form of a matrix, but since the first elements in our lists pertain to the new article, we just want the first row)
+        text_similarity = [1. - i for i in squareform(pdist(X.toarray(), 'cosine'))[0]] 
+        for i in range(1,len(text_similarity)): # skip first element since it's our new article
+            if text_similarity[i] >= 0.5: # similar found (50% similarity threshold, could be raised later on)
+                c.execute("""INSERT INTO similar_articles(article1,article2,similarity) VALUES (%s,%s,%s)""",(idArticle,IDs[i],text_similarity[i],))
+                self.similar_articles.append((IDs[i],round(text_similarity[i],3)))
 
     # uses Google Natural Language API to analyze article text, returning an overall sentiment score and its magnitude
     # sentiment scores correspond to the "emotional leaning of the text" according to Google - scores above 0 are considered positive sentiment, below are negative
@@ -136,7 +168,7 @@ class Article:
             print("Failed to write/store text file:",e)
 
     # adds all of an article's information to the database
-    def addToDatabase(self,c,smm):
+    def addToDatabase(self,c,smm,v_simtext):
         self.analyzeSentiment(c)
         self.metrics = smm.get_metrics(self.url)
         # insert new Article row
@@ -146,11 +178,11 @@ class Article:
                      tw_tweets_initial,tw_favorites_initial,tw_retweets_initial,tw_top_favorites_initial,tw_top_retweets_initial,
                      rdt_posts_initial,rdt_total_comments_initial,rdt_total_scores_initial,rdt_top_comments_initial,rdt_top_score_initial,rdt_top_ratio_initial,rdt_avg_ratio_initial) 
                      VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",t)
-
         # then insert the other stuff (keywords and images)
         idArticle = c.lastrowid # article id needed for keywords, images, and storing txt file
         self.addKeywords(idArticle,c)
         self.addImages(idArticle,c)
+        self.generate_similar_articles(c,idArticle,v_simtext)
         self.write_txt(idArticle)
 
     # driver function for downloading, saving, and analyzing each of an article's images

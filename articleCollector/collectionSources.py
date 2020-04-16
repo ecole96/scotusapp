@@ -15,7 +15,7 @@ class TopicSites:
         self.pages = []
 
     # topic site driver
-    def collect(self,c,clf,v_text,v_title,tz,smm):
+    def collect(self,c,clf,v_text,v_title,v_simtext,tz,smm):
         print("*** Topic Sites Scraping ***")
         print()
         # this dict allows us to dynamically call topic site scrapers without actually writing them in the code
@@ -51,7 +51,7 @@ class TopicSites:
                         article.printInfo()
                         if article.isRelevant(clf,v_text,v_title):
                             # add to database
-                            article.addToDatabase(c,smm)
+                            article.addToDatabase(c,smm,v_simtext)
                             article.printAnalysisData()
                             successes += 1
                             print("\nAdded to database")
@@ -459,7 +459,7 @@ class RSSFeeds:
         self.feeds = feeds # list of feeds to parse
     
     # driver
-    def parseFeeds(self,c,clf,v_text,v_title,tz,smm):
+    def parseFeeds(self,c,clf,v_text,v_title,v_simtext,tz,smm):
         print("*** Google Alerts RSS Feeds ***")
         print()
         total = 0
@@ -483,7 +483,7 @@ class RSSFeeds:
                                 article.printInfo()
                                 if article.isRelevant(clf,v_text,v_title):
                                     # add to database
-                                    article.addToDatabase(c,smm)
+                                    article.addToDatabase(c,smm,v_simtext)
                                     article.printAnalysisData()
                                     successes += 1
                                     print("\nAdded to database")
@@ -508,7 +508,7 @@ class NewsAPICollection:
         self.newsapi = NewsApiClient(api_key=newsapi_key)
     
     # driver
-    def parseResults(self,c,clf,v_text,v_title,tz,smm):
+    def parseResults(self,c,clf,v_text,v_title,v_simtext,tz,smm):
         print("*** NewsAPI Search ***")
         print()
         total = 0
@@ -549,7 +549,7 @@ class NewsAPICollection:
                                 article.printInfo()
                                 if article.isRelevant(clf,v_text,v_title):
                                     # add to database
-                                    article.addToDatabase(c,smm)
+                                    article.addToDatabase(c,smm,v_simtext)
                                     article.printAnalysisData()
                                     successes += 1
                                     print("\nAdded to database")

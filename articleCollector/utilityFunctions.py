@@ -12,6 +12,7 @@ from urllib import parse as urlparse
 from sklearn.svm import LinearSVC
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import CountVectorizer
 from nltk.corpus import stopwords
 from scipy.sparse import hstack
 from selenium.webdriver.support.ui import WebDriverWait
@@ -188,6 +189,10 @@ def train_relevancy(c):
     X = convertTextData(Xraw,v_text,v_title,'train')
     clf = CalibratedClassifierCV(LinearSVC(class_weight='balanced'),method='sigmoid',cv=5).fit(X,Y) #LinearSVC() doesn't have probability functionality by default so wrapping it into CalibratedClassiferCV()
     return clf, v_text, v_title
+
+# returns CountVectorizer necessary for determining article similarity
+def generate_similarity_model():
+    return CountVectorizer(stop_words=stopwords.words("english"))
 
 # training data consists of input (x) and output (y)
 # x = 2d array of [article title, article_text]
