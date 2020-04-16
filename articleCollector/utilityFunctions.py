@@ -7,6 +7,7 @@ import requests
 import math
 import os
 import smtplib
+import pickle
 from bs4 import BeautifulSoup
 from urllib import parse as urlparse
 from sklearn.svm import LinearSVC
@@ -182,12 +183,27 @@ def replaceTitle(originalTitle, scrapedTitle):
 # return vectorizer and clf (classifier) because we need them to predict relevancy for individual articles later on
 # our model will consist of two separate tf-idf matrices (one for article text, another for titles) combined into one
 def train_relevancy(c):
-    print("Training relevancy check dataset...")
-    Xraw, Y = get_training_data(c,True)
-    v_text = TfidfVectorizer(stop_words=stopwords.words("english"),min_df=5)
-    v_title = TfidfVectorizer(stop_words=stopwords.words("english"),ngram_range=(1,3))
-    X = convertTextData(Xraw,v_text,v_title,'train')
-    clf = CalibratedClassifierCV(LinearSVC(class_weight='balanced'),method='sigmoid',cv=5).fit(X,Y) #LinearSVC() doesn't have probability functionality by default so wrapping it into CalibratedClassiferCV()
+    modelFailed = False
+    fullpath = "/var/www/html/scotusapp/articleCollector/relevancy_model.pkl"
+    if os.path.exists(fullpath): # attempt to load relevancy model (vectorizers and classifiers)
+        with open(fullpath,"rb") as f:
+            try:
+                v_text,v_title,clf = pickle.load(f)
+                print("Relevancy model loaded.\n")
+            except Exception as e:
+                print("ERROR: Failed to open classifier file - ",e)
+                modelFailed = True
+    else:
+        modelFailed = True
+    if modelFailed: # generate relevancy model
+        print("Training relevancy check model...")
+        Xraw, Y = get_training_data(c,True)
+        v_text = TfidfVectorizer(stop_words=stopwords.words("english"),min_df=5)
+        v_title = TfidfVectorizer(stop_words=stopwords.words("english"),ngram_range=(1,3))
+        X = convertTextData(Xraw,v_text,v_title,'train')
+        clf = CalibratedClassifierCV(LinearSVC(class_weight='balanced'),method='sigmoid',cv=5).fit(X,Y) #LinearSVC() doesn't have probability functionality by default so wrapping it into CalibratedClassiferCV()
+        with open(fullpath, 'wb') as f:
+            pickle.dump((v_text,v_title,clf),f) 
     return clf, v_text, v_title
 
 # returns CountVectorizer necessary for determining article similarity
