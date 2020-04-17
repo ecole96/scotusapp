@@ -50,8 +50,6 @@ class Scraper:
             except Exception as e:
                 print("Rejected - SCRAPING ERROR (likely formatting change): ",e)
                 article,error_code = None, 1
-            '''if article and error_code == 0:
-                c.execute("""DELETE FROM alerts WHERE sources=%s AND type='S'""",(self.source,))'''
             if article is None and error_code == 1:
                 self.ScraperAlert(self.url,self.source,c)
         else:
@@ -262,7 +260,6 @@ class Scraper:
             article, error_code = None, 1
         else:
             article,error_code = Article(self.title,self.author,self.date,self.url,self.source,text.strip(),self.images), 0
-        
         return article,error_code
 
     def politico(self,soup,tz):
