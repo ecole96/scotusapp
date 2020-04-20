@@ -424,7 +424,7 @@ class TopicSites:
                 # WSJ has some funkiness (maybe an actual error) in their formatting on the search page that makes BeautifulSoup parsing tricky
                 # so we have to convert our soup object to a str and manipulate the HTML to parse it properly
                 soupstr = str(soup)
-                find = soupstr.find('<div class="search-results-sector">') # what we want starts at the beginning of this element
+                find = soupstr.find('<div class="search-results-sector"') # what we want starts at the beginning of this element
                 if not find > -1:
                     error_code = 1
                 else:
@@ -452,7 +452,7 @@ class TopicSites:
                             error_code = 1
                             print("SCRAPING ERROR;",e)
         return error_code
-   
+          
 # functions for Google Alerts RSS feeds
 class RSSFeeds:
     def __init__(self,feeds):
