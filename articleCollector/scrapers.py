@@ -25,7 +25,7 @@ class Scraper:
     # driver function for scraping
     def scrape(self,c,driver,tz):
         # if the page to be scraped is from a source we've already written an individual scraper, use that scraper
-        specialSources = ["cnn","nytimes","jdsupra","latimes","politico","thehill","chicagotribune","wsj"]
+        specialSources = ["apnews","cnn","nytimes","jdsupra","latimes","politico","thehill","chicagotribune","wsj"]
         if self.source in specialSources:
             article,error_code = self.specificScraper(c,driver,tz)
             if article is None and error_code == 1: # fallback for specific scraper - if it fails, then attempt again using the generic scraper
@@ -415,4 +415,33 @@ class Scraper:
             article, error_code = None, 1
         else:
             article,error_code = Article(self.title,self.author,self.date,self.url,self.source,text.strip(),self.images), 0
+        return article,error_code
+    
+    def apnews(self,soup,tz):
+        if not self.title:
+            t = soup.find("meta",property="og:title")
+            if t: self.title = t.get("content").strip()
+        if not self.author:
+            a = soup.select_one("span.Component-bylines-0-2-57")
+            if a:
+                self.author = a.text.strip()[3:]
+            else:
+                self.author = "The Associated Press"
+        if not self.date:
+            d = soup.find("meta",property="article:published_time")
+            if d: 
+                datestr = d.get("content").strip()
+                self.date = tz.fromutc(datetime.datetime.strptime(datestr,"%Y-%m-%dT%H:%M:%SZ")).strftime("%Y-%m-%d %H:%M:%S")
+        if not self.images:
+            i = soup.find("meta",property="og:image")
+            if i:
+                image = i.get("content").strip()
+                self.images.append(image)
+        paragraphs = [p.text.strip() for p in soup.select("div.Article p") ]
+        text = '\n\n'.join(paragraphs)
+        if text == '':
+            print("Text is empty - likely bad scraping job (no article text)")
+            article, error_code = None, 1
+        else:
+            article,error_code = Article(self.title,self.author,self.date,self.url,self.source,text,self.images), 0
         return article,error_code
