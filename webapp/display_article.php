@@ -26,6 +26,30 @@
         return $html;
     }
 
+    // generates before and after publication similarity tables
+    function generate_sim_table($query) {
+        $html = '<table class="table table-sm table-bordered">
+                        <tr>
+                            <th>Article ID</th>
+                            <th>Date</th>
+                            <th>Source</th>
+                            <th>Title</th>
+                            <th>Similarity Score</th>
+                        </tr>';
+        while($row = mysqli_fetch_assoc($query)) {
+            $html .= "<tr>
+                                <td style='text-align:center;width:8%'>{$row['idArticle']}</td>
+                                <td style='text-align:center;width:15%'>{$row['datetime']}</td>
+                                <td style='text-align:center';width:10%'>{$row['source']}</td>
+                                <td style='width:57%'><a href='display_article.php?idArticle={$row['idArticle']}'><b>{$row['title']}</b></a></td>
+                                <td style='text-align:center;width:10%'>{$row['similarity']}</td>
+                            </tr>";
+        }
+        $html .= '</table>';
+        return $html;
+    }
+        
+
     // this page displays the full details about any given article
     include_once("authenticate.php");
     include("admins.php");
@@ -36,11 +60,21 @@
 
     $details_sql = "SELECT * from article WHERE idArticle='$idArticle'";
     $keywords_sql = "SELECT keyword FROM keyword_instances NATURAL JOIN article_keywords WHERE idArticle = '$idArticle'";
-    $images_sql = "SELECT idImage, url, path FROM image WHERE idArticle='$idArticle'";
-
+    $images_sql = "SELECT idImage FROM image WHERE idArticle='$idArticle'";
+    $similar_sql = "SELECT idArticle, datetime, source, title, similarity
+                    FROM article a
+                    INNER JOIN
+                    (SELECT CASE WHEN article1='$idArticle' THEN article2 ELSE article1 END AS otherArticle,similarity FROM similar_articles WHERE '$idArticle' in (article1,article2)) sa
+                    ON a.idArticle = sa.otherArticle
+                    WHERE datetime ";
+    $sim_postfix = "(SELECT datetime FROM article WHERE idArticle='$idArticle' LIMIT 1) ORDER BY similarity DESC, idArticle DESC";
+    $sim_before_sql = $similar_sql . '<= ' . $sim_postfix;
+    $sim_after_sql = $similar_sql . '> ' . $sim_postfix;
     $details_query = mysqli_query($connect, $details_sql);
     $keywords_query = mysqli_query($connect, $keywords_sql);
     $images_query = mysqli_query($connect, $images_sql);
+    $sim_before_query = mysqli_query($connect,$sim_before_sql);
+    $sim_after_query = mysqli_query($connect,$sim_after_sql);
 ?>
 
 <html>
@@ -111,6 +145,10 @@
                 text-align:center;
                 font-size:14px;
             }
+            #similar_articles th {
+                text-align:center;
+                font-size:14px;
+            }
         </style>
     </head>
     <body style="height:100%; background-color: #fffacd; font-family: monospace; font-weight: bold;">
@@ -143,7 +181,7 @@
                             <?php
                                 // alt ID could have been calculated within a larger details query,  but I think that query would actually be slower - so we're doing a separate query here
                                 if(isset($row['idArticle']) && isset($row['datetime'])) {
-                                    $altID_sql =   "SELECT a.n, a.date
+                                    $altID_sql =   "SELECT CONCAT(a.date, '_', LPAD(a.n, 3, '0')) as alt_id
                                                     FROM (SELECT idArticle,@n:=CASE WHEN @pubdate = date(datetime) THEN @n + 1 ELSE 1 END AS n, @pubdate:=date(datetime) as date 
                                                           FROM article 
                                                           WHERE date(datetime)=date('{$row['datetime']}') ORDER BY date,idArticle) a
@@ -152,8 +190,7 @@
                                     mysqli_query($connect,"SET @pubdate=''");
                                     $altID_query = mysqli_query($connect, $altID_sql);
                                     $altID = mysqli_fetch_assoc($altID_query);
-                                    $altID = $altID['date'] . '_' . sprintf("%03d",$altID['n']);
-                                    echo $altID;
+                                    echo $altID['alt_id'];
                                 }
                                 else {
                                     echo "N/A";
@@ -245,12 +282,11 @@
                         ?>
                     </div>
                     <div id="images" class="box" style="margin-top:1.25%;">
-                    <span class="box-header">Images & Entities</span><br><br>
+                        <span class="box-header">Images & Entities</span><br><br>
                         <?php
                             if(mysqli_num_rows($images_query) > 0) {
                                 while($image = mysqli_fetch_assoc($images_query)) {
-                                    $imgpath = file_exists("../images/{$image['path']}") ? "../images/{$image['path']}" : $image['url'];
-                                    echo "<img src='$imgpath' style='max-width:85%;'><br><br>";
+                                    echo "<img src='serve_img.php?idImage={$image['idImage']}' style='max-width:85%;'><br><br>";
                                     $img_entity_sql = "SELECT entity,score FROM image_entities NATURAL JOIN entity_instances WHERE idImage={$image['idImage']}";
                                     $img_entity_query = mysqli_query($connect,$img_entity_sql);
                                     if(mysqli_num_rows($img_entity_query) > 0) {
@@ -301,6 +337,25 @@
                                 $headers = array("Posts"=>"rdt_posts","Total Comments"=>"rdt_total_comments","Total Scores"=>"rdt_total_scores",
                                 "Top Comments"=>"rdt_top_comments","Top Score"=>"rdt_top_score","Top Ratio"=>"rdt_top_ratio","Average Ratio"=>"rdt_avg_ratio");
                                 echo generate_SMM_table($headers,$row) ?>
+                        </div>
+                    </div>
+                    <div id="similar_articles" class="box" style="margin-top:1.25%;">
+                        <span class="box-header">Similar Articles (Within 3 Days of Publication)</span><br><br>
+                        <?php
+                            $n_before = mysqli_num_rows($sim_before_query);
+                            $n_after = mysqli_num_rows($sim_after_query);
+                            $total = $n_before + $n_after;
+                            echo "<span style='font-size:18px'>$total Article" . ($total != 1 ? "s" : "") . "</span><br><br>";
+                        ?>
+                        <div id="before_pub">
+                            <span class='subheader'>Before Publication <?php echo "($n_before)"?></span>
+                            <br>
+                            <?php echo ($n_before > 0) ? generate_sim_table($sim_before_query) : "None<br><br>"; ?>
+                        </div>
+                        <div id="after_pub">
+                            <span class='subheader'>After Publication <?php echo "($n_after)"?></span>
+                            <br>
+                            <?php echo ($n_after > 0) ? generate_sim_table($sim_after_query) : "None"; ?>
                         </div>
                     </div>
                 </div>
