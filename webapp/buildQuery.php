@@ -6,7 +6,7 @@
         $dateTo = mysqli_real_escape_string($connect,$dateTo);
         
         if($mode == 'download') {
-            $sql = "SELECT a.idArticle, CONCAT(a.date, '_', LPAD(a.n, 3, '0')) as alt_id, a.datetime, a.source, IFNULL(sb.mbfs_bias,''), IFNULL(sb.mbfs_score,''), IFNULL(sb.factual_reporting,''), IFNULL(sb.allsides_bias,''), IFNULL(sb.allsides_confidence,''), 
+            $sql = "SELECT a.idArticle, CONCAT(a.date, '_', LPAD(a.n, 3, '0')) as alt_id, a.datetime, a.source, IFNULL(sb.mbfc_bias,''), IFNULL(sb.mbfc_score,''), IFNULL(sb.mbfc_factual_reporting,''), IFNULL(sb.allsides_bias,''), IFNULL(sb.allsides_confidence,''), 
                     IFNULL(sb.allsides_agree,''), IFNULL(sb.allsides_disagree,''), a.url, a.title, a.author, IFNULL(a.relevancy_score,''), IFNULL(a.score,''), IFNULL(a.magnitude,''), IFNULL(i.top_entity,''), IFNULL(i.top_entity_score,''), k.keywords, 
                     IFNULL(sa.similarBefore,''), IFNULL(sa.similarAfter,''), IFNULL(a.fb_reactions_initial,''), IFNULL(a.fb_reactions_d1,''), IFNULL(a.fb_reactions_d7,''), IFNULL(a.fb_comments_initial,''), IFNULL(a.fb_comments_d1,''), IFNULL(a.fb_comments_d7,''), IFNULL(a.fb_shares_initial,''), 
                     IFNULL(a.fb_shares_d1,''), IFNULL(a.fb_shares_d7,''), IFNULL(a.fb_comment_plugin_initial,''), IFNULL(a.fb_comment_plugin_d1,''), IFNULL(a.fb_comment_plugin_d7,''), IFNULL(a.tw_tweets_initial,''), IFNULL(a.tw_tweets_d1,''), IFNULL(a.tw_tweets_d7,''), 
@@ -32,7 +32,7 @@
                             ON ii.idArticle=imax.idArticle AND ii.entity=imax.entity AND ii.score=imax.top_entity_score) i 
                         ON a.idArticle=i.idArticle
                     LEFT JOIN (
-                        (SELECT b1.source,allsides_bias,allsides_confidence,allsides_agree,allsides_disagree,mbfs_bias,mbfs_score,factual_reporting
+                        (SELECT b1.source,allsides_bias,allsides_confidence,allsides_agree,allsides_disagree,mbfc_bias,mbfc_score,mbfc_factual_reporting
                         FROM source_bias b1
                         INNER JOIN
                             (SELECT source,MIN(allsides_id) min_id
@@ -40,9 +40,9 @@
                             GROUP BY source) b2 
                             ON b2.source=b1.source AND b1.allsides_id = b2.min_id)
                         UNION
-                        (SELECT source,allsides_bias,allsides_confidence,allsides_agree,allsides_disagree,mbfs_bias,mbfs_score,factual_reporting
+                        (SELECT source,allsides_bias,allsides_confidence,allsides_agree,allsides_disagree,mbfc_bias,mbfc_score,mbfc_factual_reporting
                         FROM source_bias
-                        WHERE allsides_bias IS NULL AND mbfs_bias IS NOT NULL)) sb 
+                        WHERE allsides_bias IS NULL AND mbfc_bias IS NOT NULL)) sb 
                         ON a.source=sb.source
                     LEFT JOIN
                         (

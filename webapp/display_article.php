@@ -235,11 +235,11 @@
                                 }
                                 echo "<hr>";
                                 echo "<span class='subheader'>";
-                                if(!empty($bias['mbfs_bias'])) {
-                                    echo "<a href='https://mediabiasfactcheck.com/{$bias['mbfs_id']}/'>Media Bias Fact Check</a></span><br><br>";
-                                    echo "<span class='field-header'>Bias: {$bias['mbfs_bias']}</span><br><br>";
-                                    echo "<span class='field-header'>Score: {$bias['mbfs_score']}</span><br><br>";
-                                    echo "<span class='field-header'>Factual Reporting</span><br>{$bias['factual_reporting']}";
+                                if(!empty($bias['mbfc_bias'])) {
+                                    echo "<a href='https://mediabiasfactcheck.com/{$bias['mbfc_id']}/'>Media Bias Fact Check</a></span><br><br>";
+                                    echo "<span class='field-header'>Bias: {$bias['mbfc_bias']}</span><br><br>";
+                                    echo "<span class='field-header'>Score: {$bias['mbfc_score']}</span><br><br>";
+                                    echo "<span class='field-header'>Factual Reporting</span><br>{$bias['mbfc_factual_reporting']}";
                                 }
                                 else {
                                     echo "Media Bias Fact Check</span><br><br>";

@@ -7,7 +7,7 @@
 
     ini_set('memory_limit','250M'); // large downloads were hitting some memory usage limit once keywords were added to the CSV - upped it here (will likely need to increase with size of the database)
     ignore_user_abort(true); // still delete temp files if user cancels download
-    set_time_limit(300);
+    set_time_limit(600);
 
     $search_query = (!empty($_GET['search_query']) ? trim($_GET['search_query']) : '');
     $dateFrom = (!empty($_GET['dateFrom']) ? $_GET['dateFrom'] : '');
@@ -51,7 +51,7 @@
             fclose($f);
         }
 
-        $headers = array('"Article ID"', '"Alt ID"', '"Date/Time"', '"Source"', '"MBFS Bias"', '"MBFS Score"', '"MBFS Factual Reporting"', '"AllSides Bias"', '"AllSides Confidence"', 
+        $headers = array('"Article ID"', '"Alt ID"', '"Date/Time"', '"Source"', '"MBFC Bias"', '"MBFC Score"', '"MBFC Factual Reporting"', '"AllSides Bias"', '"AllSides Confidence"', 
                         '"AllSides Agreement"', '"AllSides Disagreement"', '"URL"', '"Title"', '"Author"', '"Relevancy Score"', '"Sentiment Score"', '"Sentiment Magnitude"', '"Top Image Entity"', 
                         '"Entity Score"', '"Keywords"', '"Similar Articles - Before Publication"', '"Similar Articles - After Publication"','"FB Reactions - Initial Entry"', '"FB Reactions - Day 1"', '"FB Reactions - Day 7"', '"FB Comments - Initial Entry"', 
                         '"FB Comments - Day 1"', '"FB Comments - Day 7"', '"FB Shares - Initial Entry"', '"FB Shares - Day 1"', '"FB Shares - Day 7"', '"FB Comment Plugin - Initial Entry"', 
