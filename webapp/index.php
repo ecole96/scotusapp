@@ -68,48 +68,55 @@
                             $('.datebox').datepicker({clearBtn: true });
                           });
         </script>
-				<script>  //***  change__But and revert__But are functions for events onmouseover and onmouseout of buttons in the webapp. When the user mouses over a button, it highlights the button, and unhighlights when leaving the button area
-					function changeSubBut(){  //***
-						document.getElementById("formBut").style.backgroundColor =  //***
-						"#87ceeb" /*sky blue*/;  //***
-					}
-					function revertSubBut(){ //revert style back to original for tab2//***
-						document.getElementById("formBut").style.backgroundColor =  //***
-						"rgba(255, 255, 255, 0.7)" /*transparent white*/;  //***
-					}
-					function changeDownBut(){  //***
-						document.getElementById("downBut").style.backgroundColor =  //***
-						"#87ceeb" /*sky blue*/;  //***
-					}
-					function revertDownBut(){ //revert style back to original for tab2
-						document.getElementById("downBut").style.backgroundColor =  //***
-						"rgba(255, 255, 255, 0.7)" /*transparent white*/;  //***
-					}
-					function changeResBut(){  //***
-						document.getElementById("resBut").style.backgroundColor =  //***
-						"#87ceeb" /*sky blue*/;  //***
-					}
-					function revertResBut(){ //revert style back to original for tab2
-						document.getElementById("resBut").style.backgroundColor =  //***
-						"rgba(255, 255, 255, 0.7)" /*transparent white*/;  //***
-					}
-					function changeApplyBut(){  //***
-						document.getElementById("applyBut").style.backgroundColor =  //***
-						"#87ceeb" /*sky blue*/;  //***
-					}
-					function revertApplyBut(){ //revert style back to original for tab2
-						document.getElementById("applyBut").style.backgroundColor =  //***
-						"rgba(255, 255, 255, 0.7)" /*transparent white*/;  //***
-					}
-					function changeMoreBut(){  //***
-						document.getElementById("moreBut").style.backgroundColor =  //***
-						"#87ceeb" /*sky blue*/;  //***
-					}
-					function revertMoreBut(){ //revert style back to original for tab2
-						document.getElementById("moreBut").style.backgroundColor =  //***
-						"rgba(255, 255, 255, 0.7)" /*transparent white*/;  //***
-					}
-				</script>
+        <script>  //***  change__But and revert__But are functions for events onmouseover and onmouseout of buttons in the webapp. When the user mouses over a button, it highlights the button, and unhighlights when leaving the button area
+            function changeSubBut(){  //***
+                document.getElementById("formBut").style.backgroundColor =  //***
+                "#87ceeb" /*sky blue*/;  //***
+            }
+            function revertSubBut(){ //revert style back to original for tab2//***
+                document.getElementById("formBut").style.backgroundColor =  //***
+                "rgba(255, 255, 255, 0.7)" /*transparent white*/;  //***
+            }
+            function changeDownBut(){  //***
+                document.getElementById("downBut").style.backgroundColor =  //***
+                "#87ceeb" /*sky blue*/;  //***
+            }
+            function revertDownBut(){ //revert style back to original for tab2
+                document.getElementById("downBut").style.backgroundColor =  //***
+                "rgba(255, 255, 255, 0.7)" /*transparent white*/;  //***
+            }
+            function changeResBut(){  //***
+                document.getElementById("resBut").style.backgroundColor =  //***
+                "#87ceeb" /*sky blue*/;  //***
+            }
+            function revertResBut(){ //revert style back to original for tab2
+                document.getElementById("resBut").style.backgroundColor =  //***
+                "rgba(255, 255, 255, 0.7)" /*transparent white*/;  //***
+            }
+            function changeApplyBut(){  //***
+                document.getElementById("applyBut").style.backgroundColor =  //***
+                "#87ceeb" /*sky blue*/;  //***
+            }
+            function revertApplyBut(){ //revert style back to original for tab2
+                document.getElementById("applyBut").style.backgroundColor =  //***
+                "rgba(255, 255, 255, 0.7)" /*transparent white*/;  //***
+            }
+            function changeMoreBut(){  //***
+                document.getElementById("moreBut").style.backgroundColor =  //***
+                "#87ceeb" /*sky blue*/;  //***
+            }
+            function revertMoreBut(){ //revert style back to original for tab2
+                document.getElementById("moreBut").style.backgroundColor =  //***
+                "rgba(255, 255, 255, 0.7)" /*transparent white*/;  //***
+            }
+        </script>
+        <style>
+            .source-results a {
+                font-size:20px;
+                font-weight:bold;
+                color:black;
+            }
+        </style>
     </head>
     <body style="height:100%; background-color: #fffacd; font-family: monospace; font-weight: bold;">  <!--***  changes appearance of webpage-->
         <!-- header -->
@@ -213,10 +220,30 @@
                                         }
                                     }
 
+                                    // if sourcebox is active - check which groups need to be displayed by default after search
+                                    $open_groups = array();
+                                    if(!empty($sourcebox)) {
+                                        foreach($sourcebox as $source) {
+                                            $group = !is_numeric($source[0]) ? ucfirst($source[0]) : "0-9";
+                                            if(!in_array($group,$open_groups)) {
+                                                array_push($open_groups,$group);
+                                            }  
+                                        }
+                                    }
+
                                     // generate list of sources in a scrollbox
                                     echo "<div class='source-results' style='max-height: 810px; overflow:auto'>";
+                                    $group = null; // used to keep track of alphabetical categories
                                     while($row = mysqli_fetch_assoc($sourcebox_query)) {
                                         $source = $row['source'];
+                                        $prevGroup = $group;
+                                        $group = !is_numeric($source[0]) ? ucfirst($source[0]) : "0-9";
+                                        if($group !== $prevGroup) { // create new group
+                                            if($prevGroup != null) { echo "</div>"; }
+                                            echo "<a data-toggle='collapse' href=#$group>$group</a><br>";
+                                            $class = in_array($group,$open_groups) ? "collapse in" : "collapse"; // if a source is selected, display that group by default upon search
+                                            echo "<div class='$class' id='$group'>";
+                                        }
                                         $count = $row['count(source)'];
                                         echo "$source ($count) <input type='checkbox' name='sourcebox[]' value='$source' ";
                                         if(!empty($sourcebox) && in_array($source,$sourcebox)) { 
@@ -224,7 +251,7 @@
                                         }
                                         echo "><br>";
                                     }
-                                    echo "</div>";
+                                    echo "</div></div>";
                                     echo "</form>";
                                 }
                             ?>
