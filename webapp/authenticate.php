@@ -15,7 +15,7 @@
         $allowAccess = false;
         $destination = "index.php";
     }
-    else if($currentPage == "verify_user.php" && $_SESSION['authority'] != 2) { // verify users have admin status (authority code 2) for them to view 
+    else if(in_array($currentPage,array("verify_user.php","user_log.php")) && $_SESSION['authority'] != 2) { // verify users have admin status (authority code 2) for them to view 
         $allowAccess = false;
         $showError = true; // display access denied page
         $msg = "Administrator status is required.";

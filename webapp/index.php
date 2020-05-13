@@ -124,7 +124,9 @@
             <?php echo contactLink(); ?> | <a href='about.html' style='color:black;'>About SCOTUSApp</a>
         </div>
         <div style="float:right; margin-right:1.5%;font-size: 18px; font-family: monospace;">
-            <a style="color:black;" href="user_page.php"><?php echo $_SESSION['name']?></a> | <a style="color:black;" href="logout.php">Logout</a>
+            <a style="color:black;" href="user_page.php"><?php echo $_SESSION['name']?></a> |
+            <?php if($_SESSION['authority'] == 2) { echo "<a style='color:black' href='user_log.php'>User Log</a> | "; } ?>
+            <a style="color:black;" href="logout.php">Logout</a>
         </div>
         <div style="background-color: #fffacd; padding: 30px; text-align: center;">
             <h1 style="font-size: 50px; font-family: monospace; font-weight: bold;"><a href='index.php' style='color:black;'>SCOTUSApp</a></h1>

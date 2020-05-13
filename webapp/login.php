@@ -35,6 +35,7 @@
         if(validLogin($email,$password,$connect,$errs)) {
             $destination = ((isset($_SESSION['redirectBackTo'])) ? $_SESSION['redirectBackTo'] : "index.php"); // redirect where necessary
             unset($_SESSION['redirectBackTo']);
+            mysqli_query($connect,"INSERT INTO user_log(idUser,time_in) VALUES ({$_SESSION['idUser']},NOW())");
             header("Location: $destination");
             exit();
         }
