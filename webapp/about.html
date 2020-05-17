@@ -9,20 +9,363 @@
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
         <!-- Latest compiled JavaScript -->
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+        <style>
+        	h1, h2, h3, h4, h5 { font-weight:bold; }
+        	h4 {text-decoration:underline;}
+        	table, th, td {border:1px solid; font-weight:bold; background-color:white;}
+        	th, td:nth-child(1) {text-align:center;}
+       	</style>
     </head>
     <body style="height:100%; background-color: #fffacd; font-family: monospace; font-weight: bold; font-size:14px;">
-        <h1 style="text-align: center; font-size: 50px; font-weight: bold;"><a href='index.php' style='color:black;'>SCOTUSApp</a></h1><hr style="background-color:#fffacd;">
-        <h2 style="font-size: 30px; font-weight: bold; text-align:center;">About SCOTUSApp</h2><br>
+        <h1 style="text-align: center; font-size: 50px; font-weight: bold;text-decoration:underline;"><a href='index.php' style='color:black;'>SCOTUSApp</a></h1><hr style="background-color:#fffacd;">
+        <h2 style="font-size: 30px; font-weight: bold; text-align:center;text-decoration:underline;">About SCOTUSApp</h2><br>
         <div style="width:50%; margin:auto;">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris ultrices rutrum risus, id lobortis felis placerat et. Aliquam efficitur urna rhoncus dapibus mattis. Etiam imperdiet quis neque tincidunt vulputate. Nullam scelerisque nulla vitae ante luctus, et ultricies nulla ornare. Vivamus non lacus vel dui vehicula faucibus nec in diam. Vivamus mauris turpis, ornare nec luctus nec, ullamcorper ac est. Nullam sodales molestie sapien ac egestas. Fusce ullamcorper tincidunt odio non cursus. Nam cursus, massa nec semper efficitur, neque turpis viverra turpis, eget mollis sapien sapien ut mi. Sed quis urna nibh. Sed scelerisque sollicitudin nisi nec efficitur. Duis rhoncus aliquet felis, eu dignissim est pellentesque at. Morbi semper felis magna, ac cursus mauris aliquam in. Vivamus nec viverra tellus, non tincidunt mi. Proin malesuada, nunc at bibendum rutrum, dui magna sagittis diam, at fermentum sapien nunc et lectus.
-            <br><br>
-            Duis sit amet ligula vel diam tincidunt pellentesque vel quis diam. Quisque ultricies neque orci, rhoncus rhoncus metus eleifend eget. Nullam dolor leo, pellentesque quis nibh sit amet, facilisis euismod lacus. Aenean porttitor, dui sit amet dictum semper, arcu urna facilisis magna, ac vulputate nunc libero non libero. Nam ut lobortis purus. Nulla fringilla auctor tellus ut viverra. Sed pulvinar condimentum orci. Integer nec neque ex. Vivamus ac eros fringilla, luctus ipsum volutpat, tristique orci.
-            <br><br>
-            Nunc mollis, sem non aliquet vestibulum, lacus dolor auctor libero, a tempus erat felis sed enim. Praesent nibh mi, posuere vitae fermentum et, viverra vitae arcu. Integer luctus leo id diam laoreet consectetur. Duis feugiat diam non auctor fermentum. In pulvinar nisl felis, vitae iaculis sapien tincidunt et. Nullam vehicula fringilla eros. Vestibulum vehicula mi lectus, egestas consectetur arcu dignissim vel. Quisque auctor lacinia urna ac commodo. Sed in nulla ullamcorper, luctus elit sit amet, porta diam. Curabitur feugiat laoreet sapien. Donec auctor id felis eu semper. Sed faucibus mauris eget odio consectetur, in sagittis ante finibus. Phasellus sagittis purus ut mi efficitur gravida. Vestibulum pulvinar felis eget metus rutrum ultricies. Donec sapien lorem, mattis eget dui hendrerit, aliquet ornare tortor.
-            <br><br>
-            Curabitur volutpat massa ac neque ornare egestas. Sed vestibulum dignissim lacus sit amet convallis. Donec pharetra malesuada leo quis venenatis. Morbi porta ante sed laoreet interdum. Vivamus eu leo accumsan, semper velit a, mollis lacus. Aliquam commodo vulputate efficitur. Nam consequat, enim vitae efficitur faucibus, ipsum justo sagittis tellus, non facilisis ante ligula sit amet ipsum. Sed suscipit dolor in risus ultricies, hendrerit tempor diam tristique. Morbi euismod purus lorem. Nam ac metus quis enim congue tincidunt. Nullam id auctor odio. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae;
-            <br><br>
-            Aenean orci diam, bibendum ac tellus sit amet, pretium imperdiet urna. Cras ultricies efficitur orci, pharetra malesuada sem euismod quis. Duis sapien magna, vulputate in cursus non, blandit nec dui. Aliquam vel diam ligula. Etiam convallis lectus mauris, sed laoreet tellus vulputate sit amet. Morbi id augue sollicitudin, tincidunt turpis at, placerat velit. Donec odio nibh, blandit iaculis odio a, porta rhoncus mi.
+            <p>SCOTUSApp is an academic research web application commissioned by Dr. Justin Wedeking and Dr. Michael Zilis of the University of Kentucky Political Science Department. The app is supported by a grant from the National Science Foundation (Award #1849286) and the Department of Political Science at the University of Kentucky.  SCOTUSApp finds, stores, and analyzes online articles pertaining to the United States Supreme Court. It captures news stories, blog posts, and opinion pieces.  It is currently developed by Evan Cole.</p>
+            <hr>
+            <h3>How It Works</h3>
+            <p>The application consists of three major components:</p><br>
+			<h4>The Article Collector</h4>
+			<p>Running behind the scenes is a script built to run continuously for the purpose of collecting and storing article data. Articles are gathered from three different sources:</p>
+			<ul>
+				<li><a href="https://www.google.com/alerts">Google Alerts</a> RSS Feeds set to collect articles with Supreme Court-related terms</li>
+				<li><a href="https://newsapi.org/">NewsAPI</a> feeds based on search results for Supreme Court-related terms</li>
+				<li>Specific “Topic Sites” – these are web pages from major publications specifically containing Supreme Court articles, such as <a href="https://www.cnn.com/specials/politics/supreme-court-nine">this one</a> from CNN.</li>
+			</ul>
+			<p>These mediums provide article links and often metadata (author, date, etc.) for the articles. Upon gathering this information, articles are then run through our scraping methods to extract the full text and its keywords, any missing metadata, and any images associated with an article.</p> 
+			<p>Once an article’s data has been fully collected, it is verified for relevancy to the U.S. Supreme Court.  Lower courts, state Supreme Courts, and foreign Supreme Courts often appear in the feeds, but these are filtered as irrelevant absent some connection to the USSC. This is primarily done by running the article’s text and title through a text classifier powered by machine learning techniques. As of May 2020, our tests indicate an accuracy rate above 95%.</p>
+			<p>If deemed relevant, the article is then analyzed for additional data:</p>
+			<ul>
+				<li>Sentiment score (and accompanying magnitude) of the article text, powered by the <a href="https://cloud.google.com/natural-language/">Google Cloud Natural Language API</a>.</li>
+				<li>Image entities (and accompanying scores) detected within an article’s images, powered by the <a href="https://cloud.google.com/vision/">Google Cloud Vision API</a>.</li>
+				<li>Social Media popularity metrics across Facebook, Twitter, and Reddit – likes, retweets, favorites, shares, # of comments, etc. This data is collected at three different intervals – upon entry into the database, 1 day after publication, and 7 days after publication. This is powered by each platform’s own APIs.</li>
+				<li>Significant similarity between the texts of any recently-added articles in the database (currently, articles published within 3 days before or after the examined article’s publication are examined). This is represented by a similarity score shared between any two similar articles, calculated through the use of <a href="https://en.wikipedia.org/wiki/Cosine_similarity">cosine similarity</a> methods.</li>
+				<li>Political bias data of an article’s source/publication, powered by information courtesy of <a href="https://mediabiasfactcheck.com/">Media Bias Fact Check</a> and <a href="https://www.allsides.com/media-bias/media-bias-ratings">AllSides.</a></li>
+			</ul>
+			<p>Upon analysis, all of the data associated with a new article is stored in our database.</p><br>
+			<h4>The Web Application</h3>
+			<p>The Web Application is the front-facing aspect of the project, as it allows users to search, view, and download our dataset. Users may download the entire database or the results of a targeted search. Searches may be refined by date, keyword, or source.  Downloads consist of a ZIP file containing a single CSV with article metadata & analysis, and TXT files of each article’s full text named according to the article’s ID. Users must make an account and be approved by the project’s administrators prior to access. As of May 2020, access of the app is limited to the University of Kentucky network, but there are plans to expand to anyone conducting academic research.</p><br>
+			<h4>The Database</h3>
+			<p>This is where all of the project’s data is stored. Data collection began in Fall 2017 and is ongoing. As of May 2020, over 30,000 articles have been collected. Over time, various improvements and adjustments have been made, and thus this should be taken into consideration by users.</p><hr>
+
+			<h3>How to Use the Application</h3>
+			<p>Users must first make an account to access the application. Upon registration, our administrators will be notified to either approve or deny your access. You will be notified of their decision.</p>
+			<p>Upon approval, use of the application can begin. Users can search for articles by text (title, keyword, and/or full text), date range, source, and/or article ID. Sources can be filtered through two different methods: either by directly searching for specific sources with the “Sources” search box (multiple sources must be separated by spaces), or checking sources within the “Sources” sidebar and hitting “Apply Filter.” Search results can be downloaded by clicking the “Download Results” button. To restart a search, either hit the “Restart” button or click the main “SCOTUSApp” header. By default, the entire dataset is displayed in the order of descending Article ID. Results can be sorted by clicking the headers in the results table.</p>
+			<p>To view more information about an article, click its title in the results table.  This will take you to the article’s individual page, where the data is neatly formatted for perusing. For legal reasons, only the first third of an article’s text is displayed on this page.</p>
+			<hr>
+
+			<h3>Understanding Downloads</h3>
+            <p>The CSVs provided with downloads contain many columns of data that may not be intuitive. Here is an explanation of each column (as they appear from left-to-right):</p>
+            <br>
+			<table>
+				<tbody>
+					<tr>
+						<th>
+							<h4>Column Name</h4>
+						</th>
+						<th>
+							<h4>Explanation</h4>
+						</th>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">Article ID</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">The article&rsquo;s unique identifier</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">Alt ID</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">An alternative identifier, formatted as YYYY-MM-DD_N, where &ldquo;YYYY-MM-DD&rdquo; is the article&rsquo;s publication date and N is &ldquo;Nth&rdquo; article published on that day (e.g., 2020-05-14_002 is the 2nd article published on May 14, 2020)</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">Date/Time</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">The article&rsquo;s date &amp; time of publication (if not available, this is the date/time the article was entered into the database)</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">Source</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">The publication source. Currently this is denoted in the form of the source&rsquo;s URL domain name (e.g., New York Times = nytimes)</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">MBFC Bias</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">Media Bias Fact Check&rsquo;s bias classification of a source (ranging from Left to Right)</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">MBFC Score</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">Media Bias Fact Check&rsquo;s numerical degree of bias (range from [-1,1] where -1 is left-wing, 0 is centrist, and 1 is right-wing)</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">MBFC Factual Reporting</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">Media Bias Fact Check&rsquo;s determination if source&rsquo;s reporting is based on factual evidence</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">AllSides Bias</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">AllSides&rsquo;s bias classification of a source (ranging from Left to Right)</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">AllSides Agree</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">The number of votes from users who agree with AllSides&rsquo;s bias classification</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">AllSides Disagree</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">The number of votes from users who disagree with AllSides&rsquo;s bias classification</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">URL</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">The article&rsquo;s web address</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">Title</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">The article title</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">Author</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">The article author</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">Relevancy Score</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">The article&rsquo;s probability of being &ldquo;relevant&rdquo; to the federal Supreme Court. The closer to 1 it is, the more relevant it likely is.</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">Sentiment Score</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">An article&rsquo;s overall &ldquo;emotional sentiment&rdquo; (negative value = negative emotion, 0 = more neutral, positive = positive emotion)</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">Sentiment Magnitude</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">The overall &ldquo;strength&rdquo; of the sentiment score (low magnitude = less emotion)</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">Top Image Entity</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">The entity detected in an article&rsquo;s images with the highest confidence score (often the subject of the image)</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">Entity Score</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">The &ldquo;confidence&rdquo; score associated with the top entity</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">Keywords</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">The most important words in an article</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">Similar Articles &ndash; Before Publication</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">Any similar articles published prior to an article&rsquo;s publication (formatted as a string in the &ldquo;similar article&rsquo;s ID:similarity score&rdquo; format, delimited by commas for multiple matches)</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">Similar Articles &ndash; After Publication</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">Any similar articles published after an article&rsquo;s publication (same formatting)</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">FB Reactions (split into Initial Entry / Day 1 / Day 7 columns &ndash; subsequent columns also follow this format)</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;"># of reactions on Facebook posts linking to the article at the labelled point in time</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">FB Comments</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;"># of comments on Facebook posts linking to the article</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">FB Shares</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;"># of shares of Facebook posts linking to the article</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">FB Comment Plugin</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;"># of comments posted on article links using the Facebook Comment Plugin</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">TW Tweets</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;"># of unique Twitter tweets linking to an article (does not count retweets)</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">TW Total Favorites</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;"># of favorites across all tweets linking to an article</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">TW Total Retweets</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;"># of retweets across all tweets linking to an article</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">TW Top Favorites</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">The highest # of favorites belonging to a single tweet linking to an article</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">TW Top Retweets</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">The highest # of retweets belonging to a single tweet linking to an article</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">RDT Posts</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">The # of Reddit posts linking to an article</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">RDT Total Comments</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">The # of comments across all Reddit posts linking to an article</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">RDT Total Scores</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">The sum of the &ldquo;score&rdquo; of each Reddit post linking to an article, where the score is the net number of upvotes (increase score) vs. downvotes (decrease score) belonging to a post</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">RDT Top Comments</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">The highest # of comments belonging to a single Reddit post linking to an article</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">RDT Top Score</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">The highest score belonging to a single Reddit post linking to an article</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">RDT Top Ratio</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">The highest score ratio belonging to a single Reddit post linking to the article, where the score ratio = (# of upvotes / sum of upvotes and downvotes)</span></p>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<p><span style="font-weight: bold;">RDT Average Ratio</span></p>
+						</td>
+						<td>
+							<p><span style="font-weight: bold;">The average score ratio across all Reddit posts linking to an article</span></p>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+			<br>
+			<p>Any empty columns in a CSV mean that field is either not applicable, or not available.</p>
         </div>
     </body>
 </html>
