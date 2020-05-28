@@ -3,36 +3,38 @@
     // everything is stored inside a .zip file
     include_once("authenticate.php");
     include_once("db_connect.php");
-    include("buildQuery.php");
+    include("utils.php");
 
     ini_set('memory_limit','250M'); // large downloads were hitting some memory usage limit once keywords were added to the CSV - upped it here (will likely need to increase with size of the database)
     ignore_user_abort(true); // still delete temp files if user cancels download
     set_time_limit(600);
 
-    $search_query = (!empty($_GET['search_query']) ? trim($_GET['search_query']) : '');
-    $dateFrom = (!empty($_GET['dateFrom']) ? $_GET['dateFrom'] : '');
-    $dateTo = (!empty($_GET['dateTo']) ? $_GET['dateTo'] : '');
-    $source_search = (!empty($_GET['source_search']) ? trim($_GET['source_search']) : '');
-    $ID_search = (!empty($_GET['ID_search']) ? trim($_GET['ID_search']) : '');
+    // sanitize input
+    $title_query = (!empty($_GET['title_query']) ? clean($_GET['title_query']) : '');
+    $text_query = (!empty($_GET['text_query']) ? clean($_GET['text_query']) : '');
+    $keyword_query = (!empty($_GET['keyword_query']) ? clean($_GET['keyword_query']) : '');
+    $bool_search = !empty($_GET['bool_search']) && in_array($_GET['bool_search'],array('OR','AND')) ? $_GET['bool_search'] : 'OR';
+    $dateFrom = (!empty($_GET['dateFrom']) ? clean($_GET['dateFrom']) : '');
+    $dateTo = (!empty($_GET['dateTo']) ? clean($_GET['dateTo']) : '');
+    $source_search = (!empty($_GET['source_search']) ? clean($_GET['source_search']) : '');
+    $ID_search = (!empty($_GET['ID_search']) ? clean($_GET['ID_search']) : '');
     $sourcebox = (!empty($_GET['sourcebox']) ? $_GET['sourcebox'] : '');
 
     // Download article data into a .zip file consisting of a single .csv file with all of the search results + individual .txt files for each article's content
     $download_id = uniqid(); // download identifier used in zip and csv filenames to differentiate one download instance from another (in case of simultaneous downloads from multiple users)
 
     $curdir = getcwd();
-    $csvName = "article_$download_id.csv";
+    $csvName = "articles_$download_id.csv";
 
-    $sql = buildQuery($connect,$search_query,$dateFrom,$dateTo,$source_search,$ID_search,$sourcebox,"download");
+    $sql = buildQuery($connect,$title_query,$text_query,$keyword_query,$bool_search,$dateFrom,$dateTo,$source_search,$ID_search,$sourcebox,'download');
     $outfile_sql = "INTO OUTFILE '$curdir/$csvName'
                     FIELDS TERMINATED BY '\\t' 
                     OPTIONALLY ENCLOSED BY '\\\"' ESCAPED BY '\"'
-                    LINES TERMINATED BY '\\n'"; // necessary for MySQL to directly generate the CSV
+                    LINES TERMINATED BY '\\r\\n'"; // necessary for MySQL to directly generate the CSV
     $sql .= $outfile_sql;
 
     // settings user variables necessary for calculating an article's Alt ID
     mysqli_query($connect,"SET SESSION group_concat_max_len = 1000000"); // need to temporarily increase GROUP_CONCAT() length
-    mysqli_query($connect,"SET @n=0");
-    mysqli_query($connect,"SET @pubdate=''");
     $query = mysqli_query($connect, $sql) or die(mysqli_connect_error()); // execute query
     mysqli_close($connect);
 

@@ -1,12 +1,16 @@
 <?php
-	function buildQuery($connect,$search_query,$dateFrom,$dateTo,$source_search,$ID_search,$sourcebox,$mode) {
+    // used to build dynamic search queries (for results table/searching, downloading, and source data)
+    function buildQuery($connect,$title_query,$text_query,$keyword_query,$bool_search,$dateFrom,$dateTo,$source_search,$ID_search,$sourcebox,$mode) {
         // preventing SQL injections...(more complex strings handled farther down)
-        $search_query = mysqli_real_escape_string($connect,$search_query);
+        $title_query = mysqli_real_escape_string($connect,$title_query);
+        $text_query = mysqli_real_escape_string($connect,$text_query);
+        $keyword_query = mysqli_real_escape_string($connect,$keyword_query);
+        $bool_search = mysqli_real_escape_string($connect,$bool_search);
         $dateFrom = mysqli_real_escape_string($connect,$dateFrom);
         $dateTo = mysqli_real_escape_string($connect,$dateTo);
         
         if($mode == 'download') {
-            $sql = "SELECT a.idArticle, CONCAT(a.date, '_', LPAD(a.n, 3, '0')) as alt_id, a.datetime, a.source, IFNULL(sb.mbfc_bias,''), IFNULL(sb.mbfc_score,''), IFNULL(sb.mbfc_factual_reporting,''), IFNULL(sb.allsides_bias,''), IFNULL(sb.allsides_confidence,''), 
+            $sql = "SELECT a.idArticle, CONCAT(date(a.datetime), '_', LPAD(a.n, 3, '0')) as alt_id, a.datetime, a.source, IFNULL(sb.mbfc_bias,''), IFNULL(sb.mbfc_score,''), IFNULL(sb.mbfc_factual_reporting,''), IFNULL(sb.allsides_bias,''), IFNULL(sb.allsides_confidence,''), 
                     IFNULL(sb.allsides_agree,''), IFNULL(sb.allsides_disagree,''), a.url, a.title, a.author, IFNULL(a.relevancy_score,''), IFNULL(a.score,''), IFNULL(a.magnitude,''), IFNULL(i.top_entity,''), IFNULL(i.top_entity_score,''), k.keywords, 
                     IFNULL(sa.similarBefore,''), IFNULL(sa.similarAfter,''), IFNULL(a.fb_reactions_initial,''), IFNULL(a.fb_reactions_d1,''), IFNULL(a.fb_reactions_d7,''), IFNULL(a.fb_comments_initial,''), IFNULL(a.fb_comments_d1,''), IFNULL(a.fb_comments_d7,''), IFNULL(a.fb_shares_initial,''), 
                     IFNULL(a.fb_shares_d1,''), IFNULL(a.fb_shares_d7,''), IFNULL(a.fb_comment_plugin_initial,''), IFNULL(a.fb_comment_plugin_d1,''), IFNULL(a.fb_comment_plugin_d7,''), IFNULL(a.tw_tweets_initial,''), IFNULL(a.tw_tweets_d1,''), IFNULL(a.tw_tweets_d7,''), 
@@ -15,13 +19,7 @@
                     IFNULL(a.rdt_total_comments_d1,''), IFNULL(a.rdt_total_comments_d7,''), IFNULL(a.rdt_total_scores_initial,''), IFNULL(a.rdt_total_scores_d1,''), IFNULL(a.rdt_total_scores_d7,''), IFNULL(a.rdt_top_comments_initial,''), IFNULL(a.rdt_top_comments_d1,''), 
                     IFNULL(a.rdt_top_comments_d7,''), IFNULL(a.rdt_top_score_initial,''), IFNULL(a.rdt_top_score_d1,''), IFNULL(a.rdt_top_score_d7,''), IFNULL(a.rdt_top_ratio_initial,''), IFNULL(a.rdt_top_ratio_d1,''), IFNULL(a.rdt_top_ratio_d7,''), IFNULL(a.rdt_avg_ratio_initial,''), 
                     IFNULL(a.rdt_avg_ratio_d1,''), IFNULL(a.rdt_avg_ratio_d7,'') 
-                    FROM (SELECT @n:=CASE WHEN @pubdate = date(datetime) THEN @n + 1 ELSE 1 END AS n, @pubdate:=date(datetime) as date, idArticle, url, source, author, datetime, title, score, magnitude, relevancy_score,fb_reactions_initial, 
-                                    fb_comments_initial, fb_shares_initial, fb_comment_plugin_initial, tw_tweets_initial, tw_favorites_initial, tw_retweets_initial, tw_top_favorites_initial, tw_top_retweets_initial, rdt_posts_initial, rdt_total_comments_initial, 
-                                    rdt_total_scores_initial,rdt_top_comments_initial,rdt_top_score_initial, rdt_top_ratio_initial, rdt_avg_ratio_initial, fb_reactions_d1, fb_comments_d1, fb_shares_d1,fb_comment_plugin_d1, tw_tweets_d1, tw_favorites_d1, 
-                                    tw_retweets_d1, tw_top_favorites_d1, tw_top_retweets_d1, rdt_posts_d1, rdt_total_comments_d1,rdt_total_scores_d1, rdt_top_comments_d1, rdt_top_score_d1, rdt_top_ratio_d1, rdt_avg_ratio_d1, fb_reactions_d7, fb_comments_d7, 
-                                    fb_shares_d7,fb_comment_plugin_d7, tw_tweets_d7, tw_favorites_d7, tw_retweets_d7, tw_top_favorites_d7, tw_top_retweets_d7,rdt_posts_d7, rdt_total_comments_d7, rdt_total_scores_d7, rdt_top_comments_d7, rdt_top_score_d7, 
-                                    rdt_top_ratio_d7, rdt_avg_ratio_d7 
-                                FROM article ORDER BY date, idArticle) a
+                    FROM article a
                     NATURAL JOIN
                         (SELECT idArticle, GROUP_CONCAT(keyword ORDER BY keyword ASC) as keywords from keyword_instances NATURAL JOIN article_keywords GROUP BY idArticle) k
                     LEFT JOIN
@@ -64,8 +62,13 @@
         }
         else {
             $sql = "SELECT a.idArticle,source,title,date(datetime) as date ";
-            if(!empty($search_query)) { $sql .= ", keywords "; }
-            $sql .= "FROM article a ";
+            $from_sql = 'FROM article a ';
+            if(!empty($keyword_query)) {  // unless we're downloading or doing a keyword search, we don't need to use the extra resources to gather keywords
+                $sql .= ', keywords '; 
+                $from_sql .= 'NATURAL JOIN 
+                            (SELECT idArticle, GROUP_CONCAT(keyword) as keywords FROM keyword_instances NATURAL JOIN article_keywords GROUP BY idArticle) k ';
+            }
+            $sql .= $from_sql;
             if($mode == 'sourcebox') {
                 $sql = "SELECT source, count(source) FROM (" . $sql;
             }
@@ -74,15 +77,29 @@
         $conditionsExist = false; // boolean to determine whether WHERE or AND is used in query statement (if true, initial condition has already been set so subsequent conditions are prefixed with AND)
 
         // primary search box (text, checks title and keywords)
-        if(!empty($search_query)) {
-            if($mode != 'download') {  // unless we're downloading or doing a text search, we don't need to use the extra resources to gather keywords
-                $sql .= 'NATURAL JOIN 
-                            (SELECT idArticle, GROUP_CONCAT(keyword) as keywords FROM keyword_instances NATURAL JOIN article_keywords GROUP BY idArticle) k ';
-            };
-            $search_str = "WHERE (title LIKE '%$search_query%' OR keywords LIKE '%$search_query%') ";
+
+        if(!empty($title_query)) {
+            $title_str = "WHERE (MATCH(title) AGAINST ('$title_query') ";
             $conditionsExist = true;
-            $sql .= $search_str;
+            $sql .= $title_str;
         }
+
+
+        if(!empty($text_query)) {
+            $text_str = !$conditionsExist ? "WHERE (" : "$bool_search ";
+            $text_str .= "MATCH(article_text) AGAINST ('$text_query') ";
+            $conditionsExist = true;
+            $sql .= $text_str;
+        }
+
+        if(!empty($keyword_query)) {
+            $keyword_str = !$conditionsExist ? "WHERE (" : "$bool_search ";
+            $keyword_str .= "(keywords LIKE '%$keyword_query%') ";
+            $conditionsExist = true;
+            $sql .= $keyword_str;
+        }
+
+        if($conditionsExist) {$sql .= ") ";}
 
         // date range search - if no dates provided, ignore
         if(!empty($dateFrom) && !empty($dateTo)) {
@@ -141,5 +158,10 @@
         else if($mode == 'sourcebox') { $sql .= ") AS results GROUP BY source ORDER BY source"; }
 
         return $sql;
+    }
+
+    // cleans input data by trimming whitespace and converting special characters to HTML-friendly ones
+    function clean($str) {
+        return htmlspecialchars(trim($str));
     }
 ?>

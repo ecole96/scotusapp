@@ -1,5 +1,5 @@
 <?php
-	include("buildQuery.php");
+	include("utils.php");
 	include_once("db_connect.php");
 
 	$col = array(
@@ -9,15 +9,18 @@
 		3 => 'date'
 	);
 
-	$search_query = (!empty($_GET['search_query']) ? trim($_GET['search_query']) : '');
-    $dateFrom = (!empty($_GET['dateFrom']) ? $_GET['dateFrom'] : '');
-	$dateTo = (!empty($_GET['dateTo']) ? $_GET['dateTo'] : '');
-	$source_search = (!empty($_GET['source_search']) ? trim($_GET['source_search']) : '');
-    $ID_search = (!empty($_GET['ID_search']) ? trim($_GET['ID_search']) : '');
-	$sourcebox = (!empty($_GET['sourcebox']) ? $_GET['sourcebox'] : '');
+	$title_query = (!empty($_GET['title_query']) ? clean($_GET['title_query']) : '');
+    $text_query = (!empty($_GET['text_query']) ? clean($_GET['text_query']) : '');
+    $keyword_query = (!empty($_GET['keyword_query']) ? clean($_GET['keyword_query']) : '');
+    $bool_search = !empty($_GET['bool_search']) && in_array($_GET['bool_search'],array('OR','AND')) ? $_GET['bool_search'] : 'OR';
+    $dateFrom = (!empty($_GET['dateFrom']) ? clean($_GET['dateFrom']) : '');
+    $dateTo = (!empty($_GET['dateTo']) ? clean($_GET['dateTo']) : '');
+    $source_search = (!empty($_GET['source_search']) ? clean($_GET['source_search']) : '');
+    $ID_search = (!empty($_GET['ID_search']) ? clean($_GET['ID_search']) : '');
+    $sourcebox = (!empty($_GET['sourcebox']) ? $_GET['sourcebox'] : '');
 	
 	// grab full chunk of data
-	$sql = buildQuery($connect,$search_query,$dateFrom,$dateTo,$source_search,$ID_search,$sourcebox,'results');
+	$sql = buildQuery($connect,$title_query,$text_query,$keyword_query,$bool_search,$dateFrom,$dateTo,$source_search,$ID_search,$sourcebox,'results');
 	$query=mysqli_query($connect,$sql);
 	$totalData=mysqli_num_rows($query);
 	$totalFilter=$totalData;

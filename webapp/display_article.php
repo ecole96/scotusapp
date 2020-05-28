@@ -1,4 +1,9 @@
 <?php
+    // this page displays the full details about any given article
+    include_once("authenticate.php");
+    include("admins.php");
+    include_once("db_connect.php");
+
     // this function dynamically generates the social media metrics tables (because there's lots of columns and it's repetitive work, I automated it)
     // headers parameter is an array following the $label=>$colname format, where the label is how the metric type is displayed on the table, 
     // and colname is the column name of that data in the database
@@ -17,7 +22,7 @@
             $html .= "<tr><th>$label</th>";
             foreach($headers as $label=>$colname) {
                 $colname .= "_$postfix";
-                $data = !is_null($row[$colname]) ? $row[$colname] : "N/A";
+                $data = isset($row[$colname]) ? $row[$colname] : "N/A";
                 $html .= "<td>$data</td>";
             }
             $html .= "</tr>";
@@ -48,17 +53,11 @@
         $html .= '</table>';
         return $html;
     }
-        
-
-    // this page displays the full details about any given article
-    include_once("authenticate.php");
-    include("admins.php");
-    include_once("db_connect.php");
 
     $idArticle = (!empty($_GET['idArticle']) ? trim($_GET['idArticle']) : '');
     $idArticle = mysqli_real_escape_string($connect,$idArticle);
 
-    $details_sql = "SELECT * from article WHERE idArticle='$idArticle'";
+    $details_sql = "SELECT *,CONCAT(date(datetime), '_', LPAD(n, 3, '0')) as alt_id FROM article WHERE idArticle='$idArticle'";
     $keywords_sql = "SELECT keyword FROM keyword_instances NATURAL JOIN article_keywords WHERE idArticle = '$idArticle'";
     $images_sql = "SELECT idImage FROM image WHERE idArticle='$idArticle'";
     $similar_sql = "SELECT idArticle, datetime, source, title, similarity
@@ -179,26 +178,7 @@
                         <span class="box-header">Details</span><br><br>
                         <?php $row = mysqli_fetch_assoc($details_query) ?>
                         <span class="field-header">ID: <?php echo isset($row['idArticle']) ? $row['idArticle'] : "N/A"; ?></span><br>
-                        <span class="field-header">Alt ID:
-                            <?php
-                                // alt ID could have been calculated within a larger details query,  but I think that query would actually be slower - so we're doing a separate query here
-                                if(isset($row['idArticle']) && isset($row['datetime'])) {
-                                    $altID_sql =   "SELECT CONCAT(a.date, '_', LPAD(a.n, 3, '0')) as alt_id
-                                                    FROM (SELECT idArticle,@n:=CASE WHEN @pubdate = date(datetime) THEN @n + 1 ELSE 1 END AS n, @pubdate:=date(datetime) as date 
-                                                          FROM article 
-                                                          WHERE date(datetime)=date('{$row['datetime']}') ORDER BY date,idArticle) a
-                                                    WHERE a.idArticle='{$row['idArticle']}'";
-                                    mysqli_query($connect,"SET @n=0");
-                                    mysqli_query($connect,"SET @pubdate=''");
-                                    $altID_query = mysqli_query($connect, $altID_sql);
-                                    $altID = mysqli_fetch_assoc($altID_query);
-                                    echo $altID['alt_id'];
-                                }
-                                else {
-                                    echo "N/A";
-                                }
-                            ?>
-                        </span><br><br>
+                        <span class="field-header">Alt ID: <?php echo !empty($row['alt_id']) ? $row['alt_id'] : "N/A"; ?></span><br><br>
                         <span class="field-header">Author</span><br><?php echo !empty($row['author']) ? $row['author'] : "N/A"; ?><br><br>
                         <span class="field-header">Source</span><br><?php echo !empty($row['source']) ? $row['source'] : "N/A"; ?><br><br>
                         <span class="field-header">Publication Date</span><br><?php echo !empty($row['datetime']) ? $row['datetime'] : "N/A"; ?><br><br>

@@ -3,10 +3,16 @@
 <!-- originally written by Evan Cole, Darin Ellis, Connor Martin, and Abdullah Alosail, with contributions by John Tompkins, Mauricio Sanchez, and Jonathan Dingess -->
 
 <?php
+    include_once("authenticate.php");
+    include("utils.php");
+    include("admins.php");
+    include_once("db_connect.php"); // connect to database (or not)
+
     // generates download button url 
-    function generateDownloadURL($search_query,$dateFrom,$dateTo,$source_search,$ID_search,$sourcebox) {
+    function generateDownloadURL($title_query,$text_query,$keyword_query,$bool_search,$dateFrom,$dateTo,$source_search,$ID_search,$sourcebox) {
         $url = "download.php?";
-        $vars = array("search_query"=>$search_query,"dateFrom"=>$dateFrom,"dateTo"=>$dateTo,"source_search"=>$source_search,"ID_search"=>$ID_search,"sourcebox"=>$sourcebox);
+        $vars = array("title_query"=>$title_query,"text_query"=>$text_query,"keyword_query"=>$keyword_query,"bool_search"=>$bool_search,
+                      "dateFrom"=>$dateFrom,"dateTo"=>$dateTo,"source_search"=>$source_search,"ID_search"=>$ID_search,"sourcebox"=>$sourcebox);
         $add_ampersand = false; // flag for multivariables - every query string beyond the first will be prefixed with &
         foreach($vars as $key=>$var) {
             if(!empty($var)) {
@@ -24,22 +30,19 @@
         return $url;
     }
 
-    include_once("authenticate.php");
-    include("buildQuery.php");
-    include("admins.php");
-    include_once("db_connect.php"); // connect to database (or not)
-
     // sanitize input
-    $search_query = (!empty($_GET['search_query']) ? trim($_GET['search_query']) : '');
-    $dateFrom = (!empty($_GET['dateFrom']) ? $_GET['dateFrom'] : '');
-    $dateTo = (!empty($_GET['dateTo']) ? $_GET['dateTo'] : '');
-    $source_search = (!empty($_GET['source_search']) ? trim($_GET['source_search']) : '');
-    $ID_search = (!empty($_GET['ID_search']) ? trim($_GET['ID_search']) : '');
+    $title_query = (!empty($_GET['title_query']) ? clean($_GET['title_query']) : '');
+    $text_query = (!empty($_GET['text_query']) ? clean($_GET['text_query']) : '');
+    $keyword_query = (!empty($_GET['keyword_query']) ? clean($_GET['keyword_query']) : '');
+    $bool_search = !empty($_GET['bool_search']) && in_array($_GET['bool_search'],array('OR','AND')) ? $_GET['bool_search'] : 'OR';
+    $dateFrom = (!empty($_GET['dateFrom']) ? clean($_GET['dateFrom']) : '');
+    $dateTo = (!empty($_GET['dateTo']) ? clean($_GET['dateTo']) : '');
+    $source_search = (!empty($_GET['source_search']) ? clean($_GET['source_search']) : '');
+    $ID_search = (!empty($_GET['ID_search']) ? clean($_GET['ID_search']) : '');
     $sourcebox = (!empty($_GET['sourcebox']) ? $_GET['sourcebox'] : '');
 
-    $downloadURL = generateDownloadURL($search_query,$dateFrom,$dateTo,$source_search,$ID_search,$sourcebox);
-    $results_sql = buildQuery($connect,$search_query,$dateFrom,$dateTo,$source_search,$ID_search,$sourcebox,'results');
-    $sourcebox_sql = buildQuery($connect,$search_query,$dateFrom,$dateTo,$source_search,$ID_search,$sourcebox,'sourcebox');
+    $downloadURL = generateDownloadURL($title_query,$text_query,$keyword_query,$bool_search,$dateFrom,$dateTo,$source_search,$ID_search,$sourcebox);
+    $sourcebox_sql = buildQuery($connect,$title_query,$text_query,$keyword_query,$bool_search,$dateFrom,$dateTo,$source_search,$ID_search,$sourcebox,'sourcebox');
     $sourcebox_query = mysqli_query($connect, $sourcebox_sql) or die(mysqli_connect_error()); // execute source sidebar query
 ?>
 
@@ -133,45 +136,91 @@
             <hr>
         </div>
 
-        <!-- search bar + options -->
-        <div class='container'>
-            <div class='content-wrapper'>
-                <div class='row'>
-                    <div class='navbar-form' align="center">
-                        <form action='' method='GET'>
-                            <br>
-                            <!-- php code within these input tags are to remember user input after search is done -->
-                            <span class="input-group-btn">
-                                <input class='form-control' type="text" name="search_query" style="width: 430px !important;" placeholder='Enter keyword[s] or leave empty' 
-                                <?php 
-                                    if(!empty($search_query)) echo " value='{$search_query}'"; 
-                                ?> >
-                                <button id="formBut" type='submit' class='btn btn-default' onmouseover='changeSubBut()' onmouseout='revertSubBut()'
-																style = "height: 30px;
-																font-weight: bold;
-																font-family: monospace;
-																background-color: rgba(255, 255, 255, 0.45);
-																border: solid 3px;
-																border-radius: 10px;">
-                                    Submit
-                                </button>
-                            </span>
-                            <br>
-                            From: <input data-provide="datepicker" class="datebox" type="text" name="dateFrom" <?php if(!empty($dateFrom) && !empty($dateTo)) { echo " value = '{$dateFrom}'"; } ?> >
-                            To: <input data-provide="datepicker" class="datebox" type="text" name="dateTo" <?php if(!empty($dateFrom) && !empty($dateTo)) { echo " value = '{$dateTo}'";} ?> >
-                            <br><br>
-                            Sources: <input class='form-control' type="text" name="source_search" style="width:275px;" placeholder='Separate sources by spaces...' 
-                                <?php 
-                                    if(!empty($source_search)) echo " value='{$source_search}'"; 
-                                ?> >
-                            IDs: <input class='form-control' type="text" name="ID_search" style="width:250px;" placeholder='Separate IDs by spaces...' 
-                                <?php 
-                                    if(!empty($ID_search)) echo " value='{$ID_search}'"; 
-                                ?> >
-                        </form>
+        <div class="container">
+            <form action='' method='GET'>
+                <div class='form-group row'>
+                    <label for='search_q' class='col-sm-1 col-form-label'>Title</label>
+                    <div class="col-sm-3">
+                        <input type="text" class="form-control" name="title_query" placeholder="Search term in title..."
+                        <?php 
+                            if(!empty($title_query)) echo " value=\"{$title_query}\""; 
+                        ?> >
+                    </div>
+                    <label for='text_query' class='col-sm-1 col-form-label'>Article Body</label>
+                    <div class="col-sm-3">
+                        <input type="text" class="form-control" name="text_query" placeholder="Search term in text..."
+                        <?php 
+                            if(!empty($text_query)) echo " value=\"{$text_query}\""; 
+                        ?> >
+                    </div>
+                    <label for='keyword_query' class='col-sm-1 col-form-label'>Keyword</label>
+                    <div class="col-sm-3">
+                        <input type="text" class="form-control" name="keyword_query" placeholder="Search term in keywords..."
+                        <?php 
+                            if(!empty($keyword_query)) echo " value=\"{$keyword_query}\""; 
+                        ?> >
                     </div>
                 </div>
-            </div>
+                <div class='form-group row'>
+                    <!-- New search function: "Combine Text Fields" allows you to AND/OR the title/text/keyword fields -->
+                    <label for='bool_search' class='col-sm-1 col-form-label'>Combine Text Fields</label>
+                    <div class="col-sm-3">
+                        <div class="radio-inline">
+                            <label><input type="radio" name="bool_search" value = "OR"
+                            <?php
+                                if($bool_search != 'AND') { // OR is default
+                                    echo "checked";
+                                }
+                            ?>
+                            >OR</label>
+                        </div>
+                        <div class="radio-inline">
+                            <label><input type="radio" name="bool_search" value= "AND"
+                            <?php
+                                if($bool_search == 'AND') {
+                                    echo "checked";
+                                }
+                            ?>
+                            >AND</label>
+                        </div>
+                    </div>
+                    <label for='dateFrom' class='col-sm-1 col-form-label'>From</label>
+                    <div class="col-sm-3">
+                        <input data-provide="datepicker" class="form-control datebox" type="text" placeholder="Start date range" name="dateFrom" <?php if(!empty($dateFrom) && !empty($dateTo)) { echo " value = \"{$dateFrom}\""; } ?> >
+                    </div>
+                    <label for='dateTo' class='col-sm-1 col-form-label'>To</label>
+                    <div class="col-sm-3">
+                        <input data-provide="datepicker" class="form-control datebox" type="text" placeholder="End date range" name="dateTo" <?php if(!empty($dateFrom) && !empty($dateTo)) { echo " value = \"{$dateTo}\""; } ?> >
+                    </div>
+                </div>
+                <div class='form-group row'>
+                    <label for='source_search' class='col-sm-1 col-form-label'>Sources</label>
+                    <div class="col-sm-3">
+                        <input class='form-control' type="text" name="source_search" style="width:275px;" placeholder='Separate sources by spaces...'
+                        <?php 
+                            if(!empty($source_search)) echo " value=\"{$source_search}\""; 
+                        ?> >
+                    </div>
+                    <label for='ID_search' class='col-sm-1 col-form-label'>IDs</label>
+                    <div class="col-sm-3">
+                        <input class='form-control' type="text" name="ID_search" style="width:250px;" placeholder='Separate IDs by spaces...'
+                        <?php 
+                            if(!empty($ID_search)) echo " value=\"{$ID_search}\""; 
+                        ?> >
+                    </div>
+                    <div class='col-sm-3 col-sm-offset-1'>
+                        <button id="formBut" type='submit' class='btn btn-default' onmouseover='changeSubBut()' onmouseout='revertSubBut()'
+                                                                    style = "height: 30px;
+                                                                    font-weight: bold;
+                                                                    font-family: monospace;
+                                                                    background-color: rgba(255, 255, 255, 0.45);
+                                                                    border: solid 3px;
+                                                                    border-radius: 10px;">
+                        Submit
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
 
         <!--download button -->
@@ -215,7 +264,8 @@
 																		border-radius: 10px;'>Apply Filter</button><br><br>";  //***
 
                                     // pass in search parameters (if any) into filter form
-                                    $hiddenvars = array('search_query'=>$search_query,'dateFrom'=>$dateFrom,'dateTo'=>$dateTo,'ID_search'=>$ID_search);
+                                    //$hiddenvars = array('search_query'=>$search_query,'dateFrom'=>$dateFrom,'dateTo'=>$dateTo,'ID_search'=>$ID_search);
+                                    $hiddenvars = array('title_query'=>$title_query,'text_query'=>$text_query,'keyword_query'=>$keyword_query,'bool_search'=>$bool_search,'dateFrom'=>$dateFrom,'dateTo'=>$dateTo,'ID_search'=>$ID_search);
                                     foreach($hiddenvars as $key=>$var) {
                                         if(!empty($var)) {
                                             echo "<input type='hidden' name='$key' value='$var'>";
@@ -264,7 +314,7 @@
 
 			<!--style of table-->
             <div class="floatRight" style="width:81%; float: right; ">
-                <table id="results-table" style="background-color: #e0eee0;table-layout: fixed" width="100%" class="stripe hover"  align="center">
+                <table id="results-table" style="background-color: #e0eee0;table-layout: fixed;" width="100%" class="stripe hover"  align="center">
                     <thead>
                         <tr align="center">
                         <th width="8%"><strong>ID</strong></th>
@@ -286,14 +336,17 @@
                                     //"visible": false
                                 }
                             ],
-                            "pageLength": 25,
+                            "pageLength": 50,
                              "processing": true,
                              "serverSide": true,
                              "ajax":{
                                 url :"response.php", // json datasource
                                 type: "get",  // type of method  , by default would be get
                                 data: function (d) {
-                                    d.search_query = "<?php echo $search_query ?>";
+                                    d.title_query = "<?php echo $title_query ?>";
+                                    d.text_query = "<?php echo $text_query ?>";
+                                    d.keyword_query = "<?php echo $keyword_query ?>";
+                                    d.bool_search = "<?php echo $bool_search ?>"
                                     d.dateFrom = "<?php echo $dateFrom ?>";
                                     d.dateTo = "<?php echo $dateTo ?>";
                                     d.ID_search = "<?php echo $ID_search ?>";
