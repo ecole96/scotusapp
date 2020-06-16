@@ -242,7 +242,7 @@ class TopicSites:
             if not pages: error_code = 1
             for p in pages:
                 try:
-                    a = p.select_one("div.PromoMedium-title a")
+                    a = p.select_one("p.PromoMedium-title a")
                     url = a['href']
                     title = a.text.strip()
                     images = []
