@@ -314,18 +314,14 @@ class TopicSites:
         soup = downloadPage(url)
         if not soup: error_code = 2
         else:
-            pages = soup.select("div.FeedItem_item")
+            pages = soup.select("article")
             if not pages: error_code = 1
             for p in pages:
                 try:
-                    url = p.select_one("h2.FeedItemHeadline_headline a")["href"]
-                    title = p.select_one("h2.FeedItemHeadline_headline").text.strip()
-                    i = p.select_one("span a img")
-                    if i:
-                        images = [i["src"]]
-                    else:
-                        images = []
-                    s = Scraper(url,title,None,None,images)
+                    t = p.select_one("div.story-content > a")
+                    title = t.select_one("h3.story-title").text.strip()
+                    url = "https://www.reuters.com" + t['href']
+                    s = Scraper(url,title,None,None,[])
                     self.pages.append(s)
                 except Exception as e:
                     print("SCRAPING ERROR:",e)
