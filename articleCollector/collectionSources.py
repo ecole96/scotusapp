@@ -22,7 +22,7 @@ class TopicSites:
         # the key is the full source name that we print out in the script and potentially has two values -  the first is the name used for the source in its scraper function, the second is a page range if the page being scraped has paginated search results (not every function has this)
         # e.g., for Politico - script prints out "Collecting Los Angeles Times...", calls collectLATimes() function, and searches from page 1 to 1 (inclusive) [default setting is to only scrape first results pages]
         functionCalls = {
-                            "Reuters":["Reuters"], "AP":["AP"], "CNN":["CNN"], "New York Times":["NYTimes"], "Washington Post":["WaPo"], "Politico":["Politico",[1,1]], "Fox News":["FoxNews"], 
+                            "Reuters":["Reuters",[1,1]], "AP":["AP"], "CNN":["CNN"], "New York Times":["NYTimes"], "Washington Post":["WaPo"], "Politico":["Politico",[1,1]], "Fox News":["FoxNews"], 
                             "Chicago Tribune": ["ChicagoTribune",[1,1]], "Los Angeles Times":["LATimes",[1,1]],"The Hill":["TheHill",[0,0]],"New York Post": ["NYPost"], "Huffington Post": ["HuffPost"], 
                             "NPR":["NPR"], "Wall Street Journal":["WSJ",[1,1]]
                         }
@@ -308,25 +308,26 @@ class TopicSites:
                     continue
         return error_code
                         
-    def collectReuters(self):
+    def collectReuters(self,pageRange):
         error_code = 0
-        url = "https://www.reuters.com/subjects/supreme-court"
-        soup = downloadPage(url)
-        if not soup: error_code = 2
-        else:
-            pages = soup.select("article")
-            if not pages: error_code = 1
-            for p in pages:
-                try:
-                    t = p.select_one("div.story-content > a")
-                    title = t.select_one("h3.story-title").text.strip()
-                    url = "https://www.reuters.com" + t['href']
-                    s = Scraper(url,title,None,None,[])
-                    self.pages.append(s)
-                except Exception as e:
-                    print("SCRAPING ERROR:",e)
-                    error_code = 1
-                    continue
+        for i in range(pageRange[0],pageRange[1]+1):
+            url = "https://www.reuters.com/news/archive/supreme-court?view=page&page=" + str(i) + "&pageSize=10"
+            soup = downloadPage(url)
+            if not soup: error_code = 2
+            else:
+                pages = soup.select("div.column1 article")
+                if not pages: error_code = 1
+                for p in pages:
+                    try:
+                        t = p.select_one("div.story-content > a")
+                        title = t.select_one("h3.story-title").text.strip()
+                        url = "https://www.reuters.com" + t['href']
+                        s = Scraper(url,title,None,None,[])
+                        self.pages.append(s)
+                    except Exception as e:
+                        print("SCRAPING ERROR:",e)
+                        error_code = 1
+                        continue
         return error_code
                                         
     def collectNPR(self):
