@@ -201,11 +201,9 @@ class Scraper:
                 else:
                     self.title = scrapedTitle
         if not self.author:
-            a = soup.select("div.ArticlePage-authorName span")
-            if a and len(a) > 1:
-                self.author = a[1].text.strip()
-            else:
-                self.author = "Unknown Author"
+            a = soup.select_one("div.author-name a")
+            if a:
+                self.author = a.text.strip()
         if not self.date:
             d = soup.find("meta",property="article:published_time")
             if d:
@@ -213,13 +211,13 @@ class Scraper:
                 if "." in datestr: datestr = datestr.split(".")[0]
                 self.date = tz.fromutc(datetime.datetime.strptime(datestr,"%Y-%m-%dT%H:%M:%S")).strftime("%Y-%m-%d %H:%M:%S")
         if not self.images:
-            i = soup.select_one("div.ArticlePage-lead img")
+            i = soup.find("meta",property="og:image")
             if i:
-                self.images.append(i["src"])
-        text = ''
-        paragraphs = soup.select("div.RichTextArticleBody p")
-        for p in paragraphs:
-            text += (p.text.strip() + '\n\n')
+                img_url = i.get("content").strip()
+                self.images.append(img_url)
+        container = soup.select_one("div.rich-text-article-body-content")
+        paragraphs = [p.text.strip() for p in container.find_all("p",attrs={'class': None}) if len(p.text.strip()) != 0]
+        text = '\n\n'.join(paragraphs)
         if text == '':
             print("Rejected - likely bad scraping job (no article text)")
             article,error_code = None, 1

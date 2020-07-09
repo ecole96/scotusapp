@@ -238,15 +238,15 @@ class TopicSites:
         soup = downloadPage(url)
         if not soup: error_code = 2
         else:
-            pages = soup.select("div.PromoMedium-wrapper")
+            pages = soup.select('ps-promo[data-content-type="article"]')
             if not pages: error_code = 1
             for p in pages:
                 try:
-                    a = p.select_one("p.PromoMedium-title a")
+                    a = p.select_one("p.promo-title a")
                     url = a['href']
                     title = a.text.strip()
                     images = []
-                    i = p.select_one("div.PromoMedium-media img")
+                    i = p.select_one("div.promo-media img")
                     if i: images = [i['data-src']]
                     s = Scraper(url,title,author,None,images)
                     self.pages.append(s)
