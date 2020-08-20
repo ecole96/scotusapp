@@ -10,55 +10,58 @@
         $dateTo = mysqli_real_escape_string($connect,$dateTo);
         
         if($mode == 'download') {
-            $sql = "SELECT a.idArticle, CONCAT(date(a.datetime), '_', LPAD(a.n, 3, '0')) as alt_id, a.datetime, a.source, IFNULL(sb.mbfc_bias,''), IFNULL(sb.mbfc_score,''), IFNULL(sb.mbfc_factual_reporting,''), IFNULL(sb.allsides_bias,''), IFNULL(sb.allsides_confidence,''), 
-                    IFNULL(sb.allsides_agree,''), IFNULL(sb.allsides_disagree,''), a.url, a.title, a.author, IFNULL(a.relevancy_score,''), IFNULL(a.score,''), IFNULL(a.magnitude,''), IFNULL(i.top_entity,''), IFNULL(i.top_entity_score,''), k.keywords, 
-                    IFNULL(sa.similarBefore,''), IFNULL(sa.similarAfter,''), IFNULL(a.fb_reactions_initial,''), IFNULL(a.fb_reactions_d1,''), IFNULL(a.fb_reactions_d7,''), IFNULL(a.fb_comments_initial,''), IFNULL(a.fb_comments_d1,''), IFNULL(a.fb_comments_d7,''), IFNULL(a.fb_shares_initial,''), 
-                    IFNULL(a.fb_shares_d1,''), IFNULL(a.fb_shares_d7,''), IFNULL(a.fb_comment_plugin_initial,''), IFNULL(a.fb_comment_plugin_d1,''), IFNULL(a.fb_comment_plugin_d7,''), IFNULL(a.tw_tweets_initial,''), IFNULL(a.tw_tweets_d1,''), IFNULL(a.tw_tweets_d7,''), 
-                    IFNULL(a.tw_favorites_initial,''), IFNULL(a.tw_favorites_d1,''), IFNULL(a.tw_favorites_d7,''), IFNULL(a.tw_retweets_initial,''), IFNULL(a.tw_retweets_d1,''), IFNULL(a.tw_retweets_d7,''), IFNULL(a.tw_top_favorites_initial,''), IFNULL(a.tw_top_favorites_d1,''), 
-                    IFNULL(a.tw_top_favorites_d7,''), IFNULL(a.tw_top_retweets_initial,''), IFNULL(a.tw_top_retweets_d1,''), IFNULL(a.tw_top_retweets_d7,''), IFNULL(a.rdt_posts_initial,''), IFNULL(a.rdt_posts_d1,''), IFNULL(a.rdt_posts_d7,''), IFNULL(a.rdt_total_comments_initial,''), 
-                    IFNULL(a.rdt_total_comments_d1,''), IFNULL(a.rdt_total_comments_d7,''), IFNULL(a.rdt_total_scores_initial,''), IFNULL(a.rdt_total_scores_d1,''), IFNULL(a.rdt_total_scores_d7,''), IFNULL(a.rdt_top_comments_initial,''), IFNULL(a.rdt_top_comments_d1,''), 
-                    IFNULL(a.rdt_top_comments_d7,''), IFNULL(a.rdt_top_score_initial,''), IFNULL(a.rdt_top_score_d1,''), IFNULL(a.rdt_top_score_d7,''), IFNULL(a.rdt_top_ratio_initial,''), IFNULL(a.rdt_top_ratio_d1,''), IFNULL(a.rdt_top_ratio_d7,''), IFNULL(a.rdt_avg_ratio_initial,''), 
-                    IFNULL(a.rdt_avg_ratio_d1,''), IFNULL(a.rdt_avg_ratio_d7,'') 
-                    FROM article a
-                    NATURAL JOIN
-                        (SELECT idArticle, GROUP_CONCAT(keyword ORDER BY keyword ASC) as keywords from keyword_instances NATURAL JOIN article_keywords GROUP BY idArticle) k
-                    LEFT JOIN
-                        (SELECT ii.idArticle,ii.entity as top_entity,imax.top_entity_score
-                            FROM (SELECT idArticle,entity,score FROM image NATURAL JOIN entity_instances NATURAL JOIN image_entities) ii
-                            INNER JOIN
-                            (SELECT idArticle,entity,MAX(score) as top_entity_score FROM image NATURAL JOIN entity_instances NATURAL JOIN image_entities GROUP BY idArticle) imax
-                            ON ii.idArticle=imax.idArticle AND ii.entity=imax.entity AND ii.score=imax.top_entity_score) i 
-                        ON a.idArticle=i.idArticle
-                    LEFT JOIN (
-                        (SELECT b1.source,allsides_bias,allsides_confidence,allsides_agree,allsides_disagree,mbfc_bias,mbfc_score,mbfc_factual_reporting
-                        FROM source_bias b1
-                        INNER JOIN
-                            (SELECT source,MIN(allsides_id) min_id
-                            FROM source_bias
-                            GROUP BY source) b2 
-                            ON b2.source=b1.source AND b1.allsides_id = b2.min_id)
-                        UNION
-                        (SELECT source,allsides_bias,allsides_confidence,allsides_agree,allsides_disagree,mbfc_bias,mbfc_score,mbfc_factual_reporting
-                        FROM source_bias
-                        WHERE allsides_bias IS NULL AND mbfc_bias IS NOT NULL)) sb 
-                        ON a.source=sb.source
-                    LEFT JOIN
-                        (
-                            SELECT sa_raw.idArticle, GROUP_CONCAT(CASE WHEN idArticle_datetime >= otherArticle_datetime THEN CONCAT(otherArticle,':',similarity) ELSE null END ORDER BY similarity DESC, otherArticle DESC) as similarBefore,
-                            GROUP_CONCAT(CASE WHEN idArticle_datetime < otherArticle_datetime THEN CONCAT(otherArticle,':',similarity) ELSE null END ORDER BY similarity DESC, otherArticle DESC) as similarAfter
-                            FROM 
-                            (SELECT article1 as idArticle,article2 as otherArticle,similarity FROM similar_articles
-                            UNION ALL
-                            SELECT article2 as idArticle,article1 as otherArticle,similarity FROM similar_articles) sa_raw
-                            INNER JOIN
-                            (SELECT idArticle, datetime as idArticle_datetime FROM article) ia
-                            ON ia.idArticle=sa_raw.idArticle
-                            INNER JOIN
-                            (SELECT idArticle, datetime as otherArticle_datetime FROM article) oa
-                            ON oa.idArticle=sa_raw.otherArticle
-                            GROUP BY sa_raw.idArticle
-                        ) sa 
-                        ON a.idArticle=sa.idArticle ";
+            $sql = "SELECT a.idArticle, CONCAT(date(a.datetime), '_', LPAD(a.n, 3, '0')) as alt_id, a.datetime, a.source, IFNULL(sb.mbfc_bias,''), IFNULL(sb.mbfc_score,''), IFNULL(sb.mbfc_z,''), IFNULL(sb.mbfc_factual_reporting,''), IFNULL(sb.allsides_bias,''), IFNULL(sb.allsides_score,''), IFNULL(sb.allsides_z,''), IFNULL(sb.allsides_confidence,''), 
+            IFNULL(sb.allsides_agree,''), IFNULL(sb.allsides_disagree,''), IFNULL(sb.mbm_score,''), IFNULL(sb.mbm_z,''), a.url, a.title, a.author, IFNULL(a.relevancy_score,''), IFNULL(a.score,''), IFNULL(a.magnitude,''), IFNULL(i.top_entity,''), IFNULL(i.top_entity_score,''), k.keywords, 
+            IFNULL(sa.similarBefore,''), IFNULL(sa.similarAfter,''), IFNULL(a.fb_reactions_initial,''), IFNULL(a.fb_reactions_d1,''), IFNULL(a.fb_reactions_d7,''), IFNULL(a.fb_comments_initial,''), IFNULL(a.fb_comments_d1,''), IFNULL(a.fb_comments_d7,''), IFNULL(a.fb_shares_initial,''), 
+            IFNULL(a.fb_shares_d1,''), IFNULL(a.fb_shares_d7,''), IFNULL(a.fb_comment_plugin_initial,''), IFNULL(a.fb_comment_plugin_d1,''), IFNULL(a.fb_comment_plugin_d7,''), IFNULL(a.tw_tweets_initial,''), IFNULL(a.tw_tweets_d1,''), IFNULL(a.tw_tweets_d7,''), 
+            IFNULL(a.tw_favorites_initial,''), IFNULL(a.tw_favorites_d1,''), IFNULL(a.tw_favorites_d7,''), IFNULL(a.tw_retweets_initial,''), IFNULL(a.tw_retweets_d1,''), IFNULL(a.tw_retweets_d7,''), IFNULL(a.tw_top_favorites_initial,''), IFNULL(a.tw_top_favorites_d1,''), 
+            IFNULL(a.tw_top_favorites_d7,''), IFNULL(a.tw_top_retweets_initial,''), IFNULL(a.tw_top_retweets_d1,''), IFNULL(a.tw_top_retweets_d7,''), IFNULL(a.rdt_posts_initial,''), IFNULL(a.rdt_posts_d1,''), IFNULL(a.rdt_posts_d7,''), IFNULL(a.rdt_total_comments_initial,''), 
+            IFNULL(a.rdt_total_comments_d1,''), IFNULL(a.rdt_total_comments_d7,''), IFNULL(a.rdt_total_scores_initial,''), IFNULL(a.rdt_total_scores_d1,''), IFNULL(a.rdt_total_scores_d7,''), IFNULL(a.rdt_top_comments_initial,''), IFNULL(a.rdt_top_comments_d1,''), 
+            IFNULL(a.rdt_top_comments_d7,''), IFNULL(a.rdt_top_score_initial,''), IFNULL(a.rdt_top_score_d1,''), IFNULL(a.rdt_top_score_d7,''), IFNULL(a.rdt_top_ratio_initial,''), IFNULL(a.rdt_top_ratio_d1,''), IFNULL(a.rdt_top_ratio_d7,''), IFNULL(a.rdt_avg_ratio_initial,''), 
+            IFNULL(a.rdt_avg_ratio_d1,''), IFNULL(a.rdt_avg_ratio_d7,''), IFNULL(sb.mbm_pol_align_very_conservative,''), IFNULL(sb.mbm_pol_align_very_liberal,''), IFNULL(sb.mbm_pol_align_moderate,''), IFNULL(sb.mbm_pol_align_liberal,''), 
+            IFNULL(sb.mbm_pol_align_conservative,''), IFNULL(sb.mbm_pol_engage_moderate,''), IFNULL(sb.mbm_pol_engage_liberal,''), IFNULL(sb.mbm_pol_engage_conservative,''), IFNULL(sb.mbm_age_young_2,''), IFNULL(sb.mbm_age_mid_aged_1,''), IFNULL(sb.mbm_age_mid_aged_2,''), 
+            IFNULL(sb.mbm_age_adolescent,''), IFNULL(sb.mbm_age_old_2,''), IFNULL(sb.mbm_age_old_1,''), IFNULL(sb.mbm_age_young_1,''), IFNULL(sb.mbm_income_250k_to_350k,''), IFNULL(sb.mbm_income_75k_to_100k,''), IFNULL(sb.mbm_income_over_500k,''), IFNULL(sb.mbm_income_125k_to_150k,''), 
+            IFNULL(sb.mbm_income_40k_to_50k,''), IFNULL(sb.mbm_income_150k_to_250k,''), IFNULL(sb.mbm_income_100k_to_125k,''), IFNULL(sb.mbm_income_30k_to_40k,''), IFNULL(sb.mbm_income_350k_to_500k,''), IFNULL(sb.mbm_income_50k_to_75k,''), IFNULL(sb.mbm_race_hispanic_all,''), 
+            IFNULL(sb.mbm_race_other,''), IFNULL(sb.mbm_race_asian_american,''), IFNULL(sb.mbm_race_african_american,''), IFNULL(sb.mbm_gen_male,''), IFNULL(sb.mbm_gen_female,''), IFNULL(sb.mbm_edu_grad_school,''), IFNULL(sb.mbm_edu_college,''), IFNULL(sb.mbm_edu_high_school,'')
+            FROM article a
+            NATURAL JOIN
+                (SELECT idArticle, GROUP_CONCAT(keyword ORDER BY keyword ASC) as keywords from keyword_instances NATURAL JOIN article_keywords GROUP BY idArticle) k
+            LEFT JOIN
+                (SELECT ii.idArticle,ii.entity as top_entity,imax.top_entity_score
+                    FROM (SELECT idArticle,entity,score FROM image NATURAL JOIN entity_instances NATURAL JOIN image_entities) ii
+                    INNER JOIN
+                    (SELECT idArticle,entity,MAX(score) as top_entity_score FROM image NATURAL JOIN entity_instances NATURAL JOIN image_entities GROUP BY idArticle) imax
+                    ON ii.idArticle=imax.idArticle AND ii.entity=imax.entity AND ii.score=imax.top_entity_score) i 
+                ON a.idArticle=i.idArticle
+            LEFT JOIN (
+                SELECT source_bias.*, ROUND((allsides_score - allsides_mean)/allsides_sd,2) as allsides_z, ROUND((mbfc_score - mbfc_mean)/mbfc_sd,2) as mbfc_z, ROUND((mbm_score - mbm_mean)/mbm_sd,2) as mbm_z 
+                FROM source_bias
+                CROSS JOIN (
+                    SELECT AVG(allsides_score) as allsides_mean, AVG(mbfc_score) as mbfc_mean, AVG(mbm_score) as mbm_mean, 
+                    STD(allsides_score) as allsides_sd, STD(mbfc_score) as mbfc_sd, STD(mbm_score) as mbm_sd
+                    FROM source_bias
+                    WHERE source in (SELECT DISTINCT source FROM article)
+                    ) agg
+                WHERE source in (SELECT DISTINCT source FROM article)
+            ) sb
+            ON a.source = sb.source
+            LEFT JOIN
+                (
+                    SELECT sa_raw.idArticle, GROUP_CONCAT(CASE WHEN idArticle_datetime >= otherArticle_datetime THEN CONCAT(otherArticle,':',similarity) ELSE null END ORDER BY similarity DESC, otherArticle DESC) as similarBefore,
+                    GROUP_CONCAT(CASE WHEN idArticle_datetime < otherArticle_datetime THEN CONCAT(otherArticle,':',similarity) ELSE null END ORDER BY similarity DESC, otherArticle DESC) as similarAfter
+                    FROM 
+                    (SELECT article1 as idArticle,article2 as otherArticle,similarity FROM similar_articles
+                    UNION ALL
+                    SELECT article2 as idArticle,article1 as otherArticle,similarity FROM similar_articles) sa_raw
+                    INNER JOIN
+                    (SELECT idArticle, datetime as idArticle_datetime FROM article) ia
+                    ON ia.idArticle=sa_raw.idArticle
+                    INNER JOIN
+                    (SELECT idArticle, datetime as otherArticle_datetime FROM article) oa
+                    ON oa.idArticle=sa_raw.otherArticle
+                    GROUP BY sa_raw.idArticle
+                ) sa 
+                ON a.idArticle=sa.idArticle ";
         }
         else {
             $sql = "SELECT a.idArticle,source,title,date(datetime) as date ";
@@ -79,7 +82,7 @@
         // primary search box (text, checks title and keywords)
 
         if(!empty($title_query)) {
-            $title_str = "WHERE (MATCH(title) AGAINST ('$title_query') ";
+            $title_str = "WHERE (MATCH(title) AGAINST ('\"$title_query\"') ";
             $conditionsExist = true;
             $sql .= $title_str;
         }
@@ -87,7 +90,7 @@
 
         if(!empty($text_query)) {
             $text_str = !$conditionsExist ? "WHERE (" : "$bool_search ";
-            $text_str .= "MATCH(article_text) AGAINST ('$text_query') ";
+            $text_str .= "MATCH(article_text) AGAINST ('\"$text_query\"') ";
             $conditionsExist = true;
             $sql .= $text_str;
         }

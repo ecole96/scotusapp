@@ -54,11 +54,47 @@
         return $html;
     }
 
+    function generate_mbm_charts($bias) {
+        $cols = array("pol_align"=>array("very_conservative","very_liberal","moderate","conservative","liberal"),
+                      "pol_engage"=>array("liberal","moderate","conservative"),
+                      "age"=>array("young_1","young_2","adolescent","mid_aged_1","mid_aged_2","old_1","old_2"),
+                      "income"=>array("250k_to_350k","75k_to_100k","over_500k","125k_to_150k","40k_to_50k","100k_to_125k","30k_to_40k","350k_to_500k","50k_to_75k"),
+                      "race"=>array("hispanic_all","asian_american","african_american","other"),
+                      "gen"=>array("male","female"),
+                      "edu"=>array("grad_school","college","high_school")
+                    );
+        $titles = array("pol_align"=>"Political Alignment","pol_engage"=>"Political Engagement","age"=>"Age","income"=>"Income ($)","race"=>"Race","gen"=>"Gender","edu"=>"Education");
+        $blocks = array();
+        foreach($cols as $field => $labels) {
+            $title = $titles[$field];
+            $data = array();
+            foreach($labels as $l) {
+                if($field != "age") { // dynamically creating chart labels based on DB naming conventions
+                    $label = ucfirst(str_replace("_"," ",$l)); 
+                }
+                else { // ...except for age, which requires more explicit naming
+                    $label_map = array("young_1"=>'18-24',"young_2"=>"25-34","adolescent"=>'Under 18',"mid_aged_1"=>'35-44',"mid_aged_2"=>'45-54',"old_1"=>'55-64',"old_2"=>'Above 65');
+                    $label = $label_map[$l];
+                }
+                $sql_col = "mbm_$field" . "_$l";
+                $y = round($bias[$sql_col]*100,2);
+                array_push($data,array("label"=>$label,"y"=>$y));
+            }
+            $block = 
+            "<div id=\"$field\" style=\"height:30%;\">
+                <script>display_chart(\"$title\",\"$field\"," . json_encode($data, JSON_NUMERIC_CHECK) . ")</script>
+            </div>";
+            array_push($blocks,$block); // add chart HTML to set
+        }
+        $html = implode("<br>",$blocks); // implode by line break to get HTML for every chart
+        return $html;
+    }
+
     $idArticle = (!empty($_GET['idArticle']) ? trim($_GET['idArticle']) : '');
     $idArticle = mysqli_real_escape_string($connect,$idArticle);
 
     $details_sql = "SELECT *,CONCAT(date(datetime), '_', LPAD(n, 3, '0')) as alt_id FROM article WHERE idArticle='$idArticle'";
-    $keywords_sql = "SELECT keyword FROM keyword_instances NATURAL JOIN article_keywords WHERE idArticle = '$idArticle'";
+    $keywords_sql = "SELECT keyword FROM keyword_instances NATURAL JOIN article_keywords WHERE idArticle = '$idArticle' ORDER BY keyword";
     $images_sql = "SELECT idImage FROM image WHERE idArticle='$idArticle'";
     $similar_sql = "SELECT idArticle, datetime, source, title, similarity
                     FROM article a
@@ -113,6 +149,21 @@
                     }
                 })
             }
+            function display_chart(title_text,id,chart_data) {
+                var chart = new CanvasJS.Chart(id, {
+                    animationEnabled: true,
+                    title: {
+                        text: title_text
+                    },
+                    data: [{
+                        type: "pie",
+                        yValueFormatString: "#,##0.00\"%\"",
+                        indexLabel: "{label} ({y})",
+                        dataPoints: chart_data
+                    }]
+                });
+                chart.render();
+            }
 		</script>
         <style>
             .box {
@@ -151,6 +202,7 @@
         </style>
     </head>
     <body style="height:100%; background-color: #fffacd; font-family: monospace; font-weight: bold;">
+        <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
         <div style='float:left; margin-left:1.5%;font-size: 18px; font-family: monospace;'>
             <?php echo contactLink(); ?> | <a href='about.html' style='color:black;'>About SCOTUSApp</a>
         </div>
@@ -199,13 +251,23 @@
                         <span class="box-header">Source Bias</span><hr>
                         <?php
                             if(!empty($row['source'])) {
-                                $bias_sql = "SELECT * FROM source_bias WHERE source = '{$row['source']}' ORDER BY allsides_id LIMIT 1";
+                                $bias_sql = "SELECT source_bias.*, ROUND((allsides_score - allsides_mean)/allsides_sd,2) as allsides_z, ROUND((mbfc_score - mbfc_mean)/mbfc_sd,2) as mbfc_z, ROUND((mbm_score - mbm_mean)/mbm_sd,2) as mbm_z 
+                                             FROM source_bias
+                                             CROSS JOIN (
+                                                 SELECT AVG(allsides_score) as allsides_mean, AVG(mbfc_score) as mbfc_mean, AVG(mbm_score) as mbm_mean, 
+                                                 STD(allsides_score) as allsides_sd, STD(mbfc_score) as mbfc_sd, STD(mbm_score) as mbm_sd
+                                                 FROM source_bias
+                                                    WHERE source in (SELECT DISTINCT source FROM article)
+                                                ) agg
+                                            WHERE source = '{$row['source']}' LIMIT 1";
                                 $bias_query = mysqli_query($connect,$bias_sql);
                                 $bias = mysqli_fetch_assoc($bias_query);
                                 echo "<span class='subheader'>";
                                 if(!empty($bias['allsides_bias'])) {
                                     echo "<a href='https://www.allsides.com/node/{$bias['allsides_id']}'>AllSides</a></span><br><br>";
                                     echo "<span class='field-header'>Bias: {$bias['allsides_bias']}</span><br><br>";
+                                    echo "<span class='field-header'>Score: {$bias['allsides_score']}</span><br><br>";
+                                    echo "<span class='field-header'>Z-Score: {$bias['allsides_z']}</span><br><br>";
                                     echo "<span class='field-header'>Confidence</span><br>{$bias['allsides_confidence']}<br><br>";
                                     $total_votes = $bias['allsides_agree'] + $bias['allsides_disagree'];
                                     $community_agreement = $total_votes > 0 ? round(($bias['allsides_agree'] / $total_votes) * 100,2) . "%" : "N/A";
@@ -221,10 +283,19 @@
                                     echo "<a href='https://mediabiasfactcheck.com/{$bias['mbfc_id']}/'>Media Bias Fact Check</a></span><br><br>";
                                     echo "<span class='field-header'>Bias: {$bias['mbfc_bias']}</span><br><br>";
                                     echo "<span class='field-header'>Score: {$bias['mbfc_score']}</span><br><br>";
+                                    echo "<span class='field-header'>Z-Score: {$bias['mbfc_z']}</span><br><br>";
                                     echo "<span class='field-header'>Factual Reporting</span><br>{$bias['mbfc_factual_reporting']}";
                                 }
                                 else {
                                     echo "Media Bias Fact Check</span><br><br>";
+                                    echo "N/A";
+                                }
+                                echo "<hr><span class='subheader'>Media Bias Monitor</span><br><br>";
+                                if(!empty($bias['mbm_score'])) {
+                                    echo "<span class='field-header'>Score: " . round($bias['mbm_score'],4) . "</span><br><br>";
+                                    echo "<span class='field-header'>Z-Score: {$bias['mbm_z']}</span>";
+                                }
+                                else {
                                     echo "N/A";
                                 }
                             }
@@ -340,21 +411,30 @@
                             <?php echo ($n_after > 0) ? generate_sim_table($sim_after_query) : "None"; ?>
                         </div>
                     </div>
+                    <div id="mbm" class="box" style="margin-top:1.25%;">
+                        <span class="box-header">Source Audience Data (Media Bias Monitor)</span><br><br>
+                        <div id="charts">
+                            <?php 
+                                echo !empty($bias['mbm_score']) ? generate_mbm_charts($bias) : "None";
+                            ?>
+                        <div>
+                    </div>
                 </div>
             </div>
-            <!-- source bias citations -->
-            <footer style='text-align:center; margin-top:1.25%'>
-                <div class="row">
-                    <div class="col-md-12">
-                        <!--THIS PORTION OF THE ATTRIBUTION MUST BE INCLUDED-->
-                        <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/"><img style="margin-top: 5px; margin-bottom: 5px;" alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" /></a><br />
-                        <p><a xmlns:dct="http://purl.org/dc/terms/" href="https://www.allsides.com/media-bias/media-bias-ratings" rel="dct:source"><span xmlns:dct="http://purl.org/dc/terms/" href="http://purl.org/dc/dcmitype/Dataset" property="dct:title" rel="dct:type">AllSides Media Bias Ratings</span></a> by <a xmlns:cc="http://creativecommons.org/ns#" href="https://www.allsides.com/unbiased-balanced-news" property="cc:attributionName" rel="cc:attributionURL">AllSides.com</a> are licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">Creative Commons Attribution-NonCommercial 4.0 International License</a>. You may use this data for research or noncommercial purposes provided you include this attribution.</p>
-                        <p>Media Bias Fact Check ratings courtesy of <a href="https://mediabiasfactcheck.com">MediaBiasFactCheck.com</a>.
-                        You may use this data for research or noncommercial purposes provided you include this attribution.</p>
-                        <p>Use of this application must be in accordance with the <a href='tos.html'>SCOTUSApp Terms of Use</a>.</p>
-                    </div>  
-                </div>
-            </footer>
         </div>
+        <!-- source bias citations -->
+        <footer style='text-align:center; margin-top:1.25%'>
+            <div class="row">
+                <div class="col-md-12">
+                    <!--THIS PORTION OF THE ATTRIBUTION MUST BE INCLUDED-->
+                    <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/"><img style="margin-top: 5px; margin-bottom: 5px;" alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" /></a><br />
+                    <p><a xmlns:dct="http://purl.org/dc/terms/" href="https://www.allsides.com/media-bias/media-bias-ratings" rel="dct:source"><span xmlns:dct="http://purl.org/dc/terms/" href="http://purl.org/dc/dcmitype/Dataset" property="dct:title" rel="dct:type">AllSides Media Bias Ratings</span></a> by <a xmlns:cc="http://creativecommons.org/ns#" href="https://www.allsides.com/unbiased-balanced-news" property="cc:attributionName" rel="cc:attributionURL">AllSides.com</a> are licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">Creative Commons Attribution-NonCommercial 4.0 International License</a>. You may use this data for research or noncommercial purposes provided you include this attribution.</p>
+                    <p>Media Bias Fact Check data courtesy of <a href="https://mediabiasfactcheck.com">MediaBiasFactCheck.com</a>.
+                    You may use this data for research or noncommercial purposes provided you include this attribution.</p>
+                    <p>Media Bias Monitor data courtesy of <a href='https://homepages.dcc.ufmg.br/~filiperibeiro/'>Filipe N. Ribiero</a>'s <a href='https://twitter-app.mpi-sws.org/media-bias-monitor/'>Media Bias Monitor project</a></p>
+                    <p>Use of this application must be in accordance with the <a href='tos.html'>SCOTUSApp Terms of Use</a>.</p>
+                </div>  
+            </div>
+        </footer>
     </body>
 </html>
