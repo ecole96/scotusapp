@@ -51,4 +51,7 @@ def main():
     t = TopicSites()
     t.collect(c,clf,v_text,v_title,v_simtext,tz,smm)
 
+    print()
+    generate_full_dl(c)
+
 main()

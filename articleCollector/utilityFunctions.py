@@ -19,6 +19,7 @@ from scipy.sparse import hstack
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+from zipfile import ZipFile
 
 # download a webpage using BeautifulSoup
 # returns soup object we can parse
@@ -85,8 +86,13 @@ def convertTime(timestr,raw_format):
 # parses URL to get the domain name of each article's link - the source
 # one defect in handling the source is that, as of now, we don't know how to handle multiple-word sources beyond just storing it all as one string (so Fox News would just be stored as foxnews)
 def getSource(url):
-    ext = tldextract.extract(url)
+    ext = tldextract.extract(url.lower())
     source = ext.domain
+    subdomain = ext.subdomain.replace('www','')
+    if source in ['iheart','radio','cbslocal','go'] or (source == 'timesofisrael' and subdomain and subdomain != 'blogs'): # exceptions with subdomains
+        source = '.'.join([subdomain,source,ext.suffix])
+    elif source in ['spectator','abc','standard','thestar','inquirer','thegazette']: # exceptions that need the suffixes
+        source = '.'.join([source,ext.suffix])
     return source
 
 # 'Supreme Court' appears in the titles of the RSS feed with bold tags around them
@@ -277,3 +283,103 @@ def get_admins():
     admin_str = os.environ['ADMINS']
     admin_emails = [a for a in admin_str.split(',')]
     return admin_emails
+
+def generate_full_dl(c):
+    sql = """SELECT a.idArticle, CONCAT(date(a.datetime), '_', LPAD(a.n, 3, '0')) as alt_id, a.datetime, a.source, IFNULL(sb.mbfc_bias,''), IFNULL(sb.mbfc_score,''), IFNULL(sb.mbfc_z,''), IFNULL(sb.mbfc_factual_reporting,''), IFNULL(sb.allsides_bias,''), IFNULL(sb.allsides_score,''), IFNULL(sb.allsides_z,''), IFNULL(sb.allsides_confidence,''), 
+            IFNULL(sb.allsides_agree,''), IFNULL(sb.allsides_disagree,''), IFNULL(sb.mbm_score,''), IFNULL(sb.mbm_z,''), a.url, a.title, a.author, IFNULL(a.relevancy_score,''), IFNULL(a.score,''), IFNULL(a.magnitude,''), IFNULL(i.top_entity,''), IFNULL(i.top_entity_score,''), k.keywords, 
+            IFNULL(sa.similarBefore,''), IFNULL(sa.similarAfter,''), IFNULL(a.fb_reactions_initial,''), IFNULL(a.fb_reactions_d1,''), IFNULL(a.fb_reactions_d7,''), IFNULL(a.fb_comments_initial,''), IFNULL(a.fb_comments_d1,''), IFNULL(a.fb_comments_d7,''), IFNULL(a.fb_shares_initial,''), 
+            IFNULL(a.fb_shares_d1,''), IFNULL(a.fb_shares_d7,''), IFNULL(a.fb_comment_plugin_initial,''), IFNULL(a.fb_comment_plugin_d1,''), IFNULL(a.fb_comment_plugin_d7,''), IFNULL(a.tw_tweets_initial,''), IFNULL(a.tw_tweets_d1,''), IFNULL(a.tw_tweets_d7,''), 
+            IFNULL(a.tw_favorites_initial,''), IFNULL(a.tw_favorites_d1,''), IFNULL(a.tw_favorites_d7,''), IFNULL(a.tw_retweets_initial,''), IFNULL(a.tw_retweets_d1,''), IFNULL(a.tw_retweets_d7,''), IFNULL(a.tw_top_favorites_initial,''), IFNULL(a.tw_top_favorites_d1,''), 
+            IFNULL(a.tw_top_favorites_d7,''), IFNULL(a.tw_top_retweets_initial,''), IFNULL(a.tw_top_retweets_d1,''), IFNULL(a.tw_top_retweets_d7,''), IFNULL(a.rdt_posts_initial,''), IFNULL(a.rdt_posts_d1,''), IFNULL(a.rdt_posts_d7,''), IFNULL(a.rdt_total_comments_initial,''), 
+            IFNULL(a.rdt_total_comments_d1,''), IFNULL(a.rdt_total_comments_d7,''), IFNULL(a.rdt_total_scores_initial,''), IFNULL(a.rdt_total_scores_d1,''), IFNULL(a.rdt_total_scores_d7,''), IFNULL(a.rdt_top_comments_initial,''), IFNULL(a.rdt_top_comments_d1,''), 
+            IFNULL(a.rdt_top_comments_d7,''), IFNULL(a.rdt_top_score_initial,''), IFNULL(a.rdt_top_score_d1,''), IFNULL(a.rdt_top_score_d7,''), IFNULL(a.rdt_top_ratio_initial,''), IFNULL(a.rdt_top_ratio_d1,''), IFNULL(a.rdt_top_ratio_d7,''), IFNULL(a.rdt_avg_ratio_initial,''), 
+            IFNULL(a.rdt_avg_ratio_d1,''), IFNULL(a.rdt_avg_ratio_d7,''), IFNULL(sb.mbm_pol_align_very_conservative,''), IFNULL(sb.mbm_pol_align_very_liberal,''), IFNULL(sb.mbm_pol_align_moderate,''), IFNULL(sb.mbm_pol_align_liberal,''), 
+            IFNULL(sb.mbm_pol_align_conservative,''), IFNULL(sb.mbm_pol_engage_moderate,''), IFNULL(sb.mbm_pol_engage_liberal,''), IFNULL(sb.mbm_pol_engage_conservative,''), IFNULL(sb.mbm_age_young_2,''), IFNULL(sb.mbm_age_mid_aged_1,''), IFNULL(sb.mbm_age_mid_aged_2,''), 
+            IFNULL(sb.mbm_age_adolescent,''), IFNULL(sb.mbm_age_old_2,''), IFNULL(sb.mbm_age_old_1,''), IFNULL(sb.mbm_age_young_1,''), IFNULL(sb.mbm_income_250k_to_350k,''), IFNULL(sb.mbm_income_75k_to_100k,''), IFNULL(sb.mbm_income_over_500k,''), IFNULL(sb.mbm_income_125k_to_150k,''), 
+            IFNULL(sb.mbm_income_40k_to_50k,''), IFNULL(sb.mbm_income_150k_to_250k,''), IFNULL(sb.mbm_income_100k_to_125k,''), IFNULL(sb.mbm_income_30k_to_40k,''), IFNULL(sb.mbm_income_350k_to_500k,''), IFNULL(sb.mbm_income_50k_to_75k,''), IFNULL(sb.mbm_race_hispanic_all,''), 
+            IFNULL(sb.mbm_race_other,''), IFNULL(sb.mbm_race_asian_american,''), IFNULL(sb.mbm_race_african_american,''), IFNULL(sb.mbm_gen_male,''), IFNULL(sb.mbm_gen_female,''), IFNULL(sb.mbm_edu_grad_school,''), IFNULL(sb.mbm_edu_college,''), IFNULL(sb.mbm_edu_high_school,'')
+            INTO OUTFILE '/var/www/html/scotusapp/webapp/full_dataset.csv' 
+            FIELDS TERMINATED BY ',' ENCLOSED BY '\\\"' 
+            ESCAPED BY '\"' 
+            LINES TERMINATED BY '\\r\\n'
+            FROM article a
+                NATURAL JOIN
+                    (SELECT idArticle, GROUP_CONCAT(keyword ORDER BY keyword ASC) as keywords from keyword_instances NATURAL JOIN article_keywords GROUP BY idArticle) k
+                LEFT JOIN
+                    (SELECT ii.idArticle,ii.entity as top_entity,imax.top_entity_score
+                        FROM (SELECT idArticle,entity,score FROM image NATURAL JOIN entity_instances NATURAL JOIN image_entities) ii
+                        INNER JOIN
+                        (SELECT idArticle,entity,MAX(score) as top_entity_score FROM image NATURAL JOIN entity_instances NATURAL JOIN image_entities GROUP BY idArticle) imax
+                        ON ii.idArticle=imax.idArticle AND ii.entity=imax.entity AND ii.score=imax.top_entity_score) i 
+                    ON a.idArticle=i.idArticle
+                LEFT JOIN (
+                    SELECT source_bias.*, ROUND((allsides_score - allsides_mean)/allsides_sd,2) as allsides_z, ROUND((mbfc_score - mbfc_mean)/mbfc_sd,2) as mbfc_z, ROUND((mbm_score - mbm_mean)/mbm_sd,2) as mbm_z 
+                    FROM source_bias
+                    CROSS JOIN (
+                        SELECT AVG(allsides_score) as allsides_mean, AVG(mbfc_score) as mbfc_mean, AVG(mbm_score) as mbm_mean, 
+                        STD(allsides_score) as allsides_sd, STD(mbfc_score) as mbfc_sd, STD(mbm_score) as mbm_sd
+                        FROM source_bias
+                        WHERE source in (SELECT DISTINCT source FROM article)
+                        ) agg
+                    WHERE source in (SELECT DISTINCT source FROM article)
+                ) sb
+                ON a.source = sb.source
+                LEFT JOIN
+                    (
+                        SELECT sa_raw.idArticle, GROUP_CONCAT(CASE WHEN idArticle_datetime >= otherArticle_datetime THEN CONCAT(otherArticle,':',similarity) ELSE null END ORDER BY similarity DESC, otherArticle DESC) as similarBefore,
+                        GROUP_CONCAT(CASE WHEN idArticle_datetime < otherArticle_datetime THEN CONCAT(otherArticle,':',similarity) ELSE null END ORDER BY similarity DESC, otherArticle DESC) as similarAfter
+                        FROM 
+                        (SELECT article1 as idArticle,article2 as otherArticle,similarity FROM similar_articles
+                        UNION ALL
+                        SELECT article2 as idArticle,article1 as otherArticle,similarity FROM similar_articles) sa_raw
+                        INNER JOIN
+                        (SELECT idArticle, datetime as idArticle_datetime FROM article) ia
+                        ON ia.idArticle=sa_raw.idArticle
+                        INNER JOIN
+                        (SELECT idArticle, datetime as otherArticle_datetime FROM article) oa
+                        ON oa.idArticle=sa_raw.otherArticle
+                        GROUP BY sa_raw.idArticle
+                    ) sa 
+                    ON a.idArticle=sa.idArticle
+                ORDER BY a.idArticle DESC"""
+    try:
+        print("Generating updated zip for full dataset...")
+        c.execute(sql)
+        headers = ['"Article ID"', '"Alt ID"', '"Date/Time"', '"Source"', '"MBFC Bias"', '"MBFC Score"', '"MBFC Z-Score"', '"MBFC Factual Reporting"', '"AllSides Bias"', '"AllSides Score"', '"AllSides Z-Score"', '"AllSides Confidence"', 
+                    '"AllSides Agreement"', '"AllSides Disagreement"', '"MBM Score"', '"MBM Z-Score"', '"URL"', '"Title"', '"Author"', '"Relevancy Score"', '"Sentiment Score"', '"Sentiment Magnitude"', '"Top Image Entity"', 
+                    '"Entity Score"', '"Keywords"', '"Similar Articles - Before Publication"', '"Similar Articles - After Publication"','"FB Reactions - Initial Entry"', '"FB Reactions - Day 1"', '"FB Reactions - Day 7"', '"FB Comments - Initial Entry"', 
+                    '"FB Comments - Day 1"', '"FB Comments - Day 7"', '"FB Shares - Initial Entry"', '"FB Shares - Day 1"', '"FB Shares - Day 7"', '"FB Comment Plugin - Initial Entry"', 
+                    '"FB Comment Plugin - Day 1"', '"FB Comment Plugin - Day 7"', '"TW Tweets - Initial Entry"', '"TW Tweets - Day 1"', '"TW Tweets - Day 7"', '"TW Total Favorites - Initial Entry"', 
+                    '"TW Total Favorites - Day 1"', '"TW Total Favorites - Day 7"', '"TW Total Retweets - Initial Entry"', '"TW Total Retweets - Day 1"', '"TW Total Retweets - Day 7"', 
+                    '"TW Top Favorites - Initial Entry"', '"TW Top Favorites - Day 1"', '"TW Top Favorites - Day 7"', '"TW Top Retweets - Initial Entry"', '"TW Top Retweets - Day 1"', 
+                    '"TW Top Retweets - Day 7"', '"RDT Posts - Initial Entry"', '"RDT Posts - Day 1"', '"RDT Posts - Day 7"', '"RDT Total Comments - Initial Entry"', '"RDT Total Comments - Day 1"', 
+                    '"RDT Total Comments - Day 7"', '"RDT Total Scores - Initial Entry"', '"RDT Total Scores - Day 1"', '"RDT Total Scores - Day 7"', '"RDT Top Comments - Initial Entry"', 
+                    '"RDT Top Comments - Day 1"', '"RDT Top Comments - Day 7"', '"RDT Top Score - Initial Entry"', '"RDT Top Score - Day 1"', '"RDT Top Score - Day 7"', '"RDT Top Ratio - Initial Entry"', 
+                    '"RDT Top Ratio - Day 1"', '"RDT Top Ratio - Day 7"', '"RDT Average Ratio - Initial Entry"', '"RDT Average Ratio - Day 1"', '"RDT Average Ratio - Day 7"', 
+                    '"MBM Political Alignment - Very Conservative"', '"MBM Political Alignment - Very Liberal"', '"MBM Political Alignment - Moderate"', '"MBM Political Alignment - Liberal"', '"MBM Political Alignment - Conservative"', 
+                    '"MBM Political Engagement - Moderate"', '"MBM Political Engagement - Liberal"', '"MBM Political Engagement - Conservative"', '"MBM Age - 25-34"', '"MBM Age - 35-44"', '"MBM Age - 45-54"', '"MBM Age - Under 18"', 
+                    '"MBM Age - Above 65"', '"MBM Age - 55-64"', '"MBM Age - 18-24"', '"MBM Income ($) - 250k to 350k"', '"MBM Income ($) - 75k to 100k"', '"MBM Income ($) - Over 500k"', '"MBM Income ($) - 125k to 150k"', '"MBM Income ($) - 40k to 50k"',
+                    '"MBM Income ($) - 150k to 250k"', '"MBM Income ($) - 100k to 125k"', '"MBM Income ($) - 30k to 40k"', '"MBM Income ($) - 350k to 500k"', '"MBM Income ($) - 50k to 75k"', '"MBM Race - Hispanic (All)"', '"MBM Race - Other"', '"MBM Race - Asian-American"', 
+                    '"MBM Race - African-American"', '"MBM Gender - Male"', '"MBM Gender - Female"', '"MBM Education - Grad school"', '"MBM Education - College"', '"MBM Education - High School"']
+        webapp_path = "/var/www/html/scotusapp/webapp/"
+        txtpath = "/var/www/html/scotusapp/txtfiles/"
+        with open(webapp_path+'full_dataset.csv','r',encoding='utf-8') as f:
+            data = f.read()
+            data = (','.join(headers) + '\n' + data) #prepend headers
+        with open(webapp_path+'full_dataset.csv','w',encoding='utf-8') as f:
+            f.write(u'\ufeff'+ data) #prepend byte order mark
+        now = datetime.datetime.now()
+        zipname = "Full_Dataset." + now.strftime("%Y_%m_%d.%H_%M_%S") + ".zip" # name zip according to time
+        with ZipFile(webapp_path + zipname,'w') as zipf:
+            zipf.write(webapp_path+"full_dataset.csv","full_dataset.csv") # inserting data CSV into zip
+            for f in os.listdir(txtpath): # ...then article .txts
+                if f.endswith(".txt"):
+                    zipf.write(txtpath+f,f)
+        for f in os.listdir(webapp_path):
+            if f.startswith("Full_Dataset") and f != zipname: # delete old .zip
+                os.remove(webapp_path+f)
+                break
+        os.remove(webapp_path+"full_dataset.csv") # delete standalone CSV now that it's been zipped
+        print("Done")
+    except Exception as e:
+        print("Failed to generate full dataset zip:",e)
