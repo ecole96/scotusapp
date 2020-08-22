@@ -8,6 +8,7 @@ import math
 import os
 import smtplib
 import pickle
+import zipfile
 from bs4 import BeautifulSoup
 from urllib import parse as urlparse
 from sklearn.svm import LinearSVC
@@ -19,7 +20,6 @@ from scipy.sparse import hstack
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from zipfile import ZipFile
 
 # download a webpage using BeautifulSoup
 # returns soup object we can parse
@@ -370,7 +370,7 @@ def generate_full_dl(c):
             f.write(u'\ufeff'+ data) #prepend byte order mark
         now = datetime.datetime.now()
         zipname = "Full_Dataset." + now.strftime("%Y_%m_%d.%H_%M_%S") + ".zip" # name zip according to time
-        with ZipFile(webapp_path + zipname,'w') as zipf:
+        with zipfile.ZipFile(webapp_path + zipname,'w',compression=zipfile.ZIP_DEFLATED) as zipf:
             zipf.write(webapp_path+"full_dataset.csv","full_dataset.csv") # inserting data CSV into zip
             for f in os.listdir(txtpath): # ...then article .txts
                 if f.endswith(".txt"):
