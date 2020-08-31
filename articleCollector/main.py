@@ -30,6 +30,7 @@ def main():
         clf, v_text, v_title = train_relevancy(c) # build training dataset for relevancy check
         v_simtext = generate_similarity_model() # get model for determining article similarity
         smm = SocialMediaMetrics() # initialize/authentication for social media metrics
+        gdrive = GDrive_auth(os.environ['GDRIVE_CONFIG_PATH'],os.environ['GDRIVE_CRED_PATH'])
         tz = pytz.timezone('US/Eastern') # initialize timezone for converting article publication datetimes to Eastern time (if necessary)
     except MySQLdb.Error as e:
         print("Database error - ",e)
@@ -39,17 +40,17 @@ def main():
     # RSS feeds
     feed_urls = ['https://www.google.com/alerts/feeds/04514219544348410405/10161046346160726598', 'https://www.google.com/alerts/feeds/04514219544348410405/7765273799045579732', 'https://www.google.com/alerts/feeds/04514219544348410405/898187730492460176', 'https://www.google.com/alerts/feeds/04514219544348410405/16898242761418666298']
     feeds = RSSFeeds(feed_urls)
-    feeds.parseFeeds(c,clf,v_text,v_title,v_simtext,tz,smm)
+    feeds.parseFeeds(c,clf,v_text,v_title,v_simtext,tz,smm,gdrive)
 
     # newsAPI results
     newsapi_key = os.environ['NEWSAPI_KEY']
     queries  = ["USA Supreme Court","US Supreme Court", "United States Supreme Court","SCOTUS"]
     newsapi = NewsAPICollection(newsapi_key,queries)
-    newsapi.parseResults(c,clf,v_text,v_title,v_simtext,tz,smm)
+    newsapi.parseResults(c,clf,v_text,v_title,v_simtext,tz,smm,gdrive)
 
     # topic sites
     t = TopicSites()
-    t.collect(c,clf,v_text,v_title,v_simtext,tz,smm)
+    t.collect(c,clf,v_text,v_title,v_simtext,tz,smm,gdrive)
 
     print()
     generate_full_dl(c)

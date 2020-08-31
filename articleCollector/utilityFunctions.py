@@ -20,6 +20,8 @@ from scipy.sparse import hstack
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
 
 # download a webpage using BeautifulSoup
 # returns soup object we can parse
@@ -284,6 +286,7 @@ def get_admins():
     admin_emails = [a for a in admin_str.split(',')]
     return admin_emails
 
+# generates a .zip of the full dataset at the end of the script to allow direct serving of that set (generating it on the fly is quite slow)
 def generate_full_dl(c):
     sql = """SELECT a.idArticle, CONCAT(date(a.datetime), '_', LPAD(a.n, 3, '0')) as alt_id, a.datetime, a.source, IFNULL(sb.mbfc_bias,''), IFNULL(sb.mbfc_score,''), IFNULL(sb.mbfc_z,''), IFNULL(sb.mbfc_factual_reporting,''), IFNULL(sb.allsides_bias,''), IFNULL(sb.allsides_score,''), IFNULL(sb.allsides_z,''), IFNULL(sb.allsides_confidence,''), 
             IFNULL(sb.allsides_agree,''), IFNULL(sb.allsides_disagree,''), IFNULL(sb.mbm_score,''), IFNULL(sb.mbm_z,''), a.url, a.title, a.author, IFNULL(a.relevancy_score,''), IFNULL(a.score,''), IFNULL(a.magnitude,''), IFNULL(i.top_entity,''), IFNULL(i.top_entity_score,''), k.keywords, 
@@ -383,3 +386,23 @@ def generate_full_dl(c):
         print("Done")
     except Exception as e:
         print("Failed to generate full dataset zip:",e)
+
+# authenticate Google Drive account
+# returns Google Drive to work with
+def GDrive_auth(configpath,credpath):
+    try:
+        gauth = GoogleAuth()
+        gauth.DEFAULT_SETTINGS['client_config_file'] = configpath
+        gauth.LoadCredentialsFile(credpath)
+        if gauth.credentials is None:
+            gauth.LocalWebserverAuth() # perform web browser authentication (this shouldn't occur as long as we have a credentials file)
+        elif gauth.access_token_expired: # refresh access token using refresh token
+            gauth.Refresh()
+        else:
+            gauth.Authorize()
+        gauth.SaveCredentialsFile(credpath) # update any credentials changes
+        gdrive = GoogleDrive(gauth)
+    except Exception as e:
+        print("Google Drive failed to authenticate:",e)
+        gdrive = None
+    return gdrive

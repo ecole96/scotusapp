@@ -3,6 +3,7 @@ from PIL import Image as img
 import io
 from google.cloud import vision
 from google.cloud.vision import types
+import os
 
 # class for handling image downloading/saving/analysis
 class Image:
@@ -53,6 +54,27 @@ class Image:
         except Exception as e:
             print("Failed to save image at",self.url,"-",e)
             return False
+
+    # backs up image to Google Drive
+    # returns retcode depending on upload status - adhering to exit code convention, 0 is success and 1 is failure.
+    def uploadImage(self,gdrive):
+        if not gdrive:
+            retcode = 1
+        else:
+            try:
+                if os.path.exists("/var/www/html/scotusapp/images/" + self.filename):
+                    db_file = gdrive.CreateFile({"title":self.filename,"parents":  [{"id": os.environ['GDRIVE_PHOTOS_FOLDER']}]})
+                    db_file.SetContentFile("/var/www/html/scotusapp/images/" + self.filename)
+                    db_file.Upload()
+                    retcode = not int(db_file.uploaded) # convert upload status to exit code
+                else:
+                    retcode = 1
+            except Exception as e:
+                print("Image upload error:",e)
+                retcode = 1
+        if retcode != 0:
+            print("Image failed to upload to Google Drive.")
+        return retcode
 
     # uses Google Cloud Vision API to detect entities in the image
     # should get entity descriptions and their respective score (higher = more likely to be relevant to the image)

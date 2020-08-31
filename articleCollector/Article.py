@@ -168,7 +168,7 @@ class Article:
             print("Failed to write/store text file:",e)
 
     # adds all of an article's information to the database
-    def addToDatabase(self,c,smm,v_simtext):
+    def addToDatabase(self,c,smm,v_simtext,gdrive):
         self.analyzeSentiment(c)
         self.metrics = smm.get_metrics(self.url)
         # insert new Article row
@@ -181,12 +181,12 @@ class Article:
         # then insert the other stuff (keywords and images)
         idArticle = c.lastrowid # article id needed for keywords, images, and storing txt file
         self.addKeywords(idArticle,c)
-        self.addImages(idArticle,c)
+        self.addImages(idArticle,c,gdrive)
         self.generate_similar_articles(c,idArticle,v_simtext)
         self.write_txt(idArticle)
 
     # driver function for downloading, saving, and analyzing each of an article's images
-    def addImages(self,idArticle,c):
+    def addImages(self,idArticle,c,gdrive):
         for index, image in enumerate(self.images):
             if image.isLogo():
                 print("Image at",image.url,"is likely a logo - it will not be downloaded or analyzed")
@@ -200,6 +200,7 @@ class Article:
                     filename += ".jpg"
                     imageSaved = image.saveImage(filename)
                     if imageSaved:
+                        image.uploadImage(gdrive)
                         image.analyzeImage(c)
                         image.addImageToDatabase(idArticle,c)
 
