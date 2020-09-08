@@ -72,45 +72,12 @@
                           });
         </script>
         <script>  //***  change__But and revert__But are functions for events onmouseover and onmouseout of buttons in the webapp. When the user mouses over a button, it highlights the button, and unhighlights when leaving the button area
-            function changeSubBut(){  //***
-                document.getElementById("formBut").style.backgroundColor =  //***
-                "#87ceeb" /*sky blue*/;  //***
+            function hoverOver(id) {
+                document.getElementById(id).style.backgroundColor =  "#87ceeb" /*sky blue*/;
             }
-            function revertSubBut(){ //revert style back to original for tab2//***
-                document.getElementById("formBut").style.backgroundColor =  //***
-                "rgba(255, 255, 255, 0.7)" /*transparent white*/;  //***
-            }
-            function changeDownBut(){  //***
-                document.getElementById("downBut").style.backgroundColor =  //***
-                "#87ceeb" /*sky blue*/;  //***
-            }
-            function revertDownBut(){ //revert style back to original for tab2
-                document.getElementById("downBut").style.backgroundColor =  //***
-                "rgba(255, 255, 255, 0.7)" /*transparent white*/;  //***
-            }
-            function changeResBut(){  //***
-                document.getElementById("resBut").style.backgroundColor =  //***
-                "#87ceeb" /*sky blue*/;  //***
-            }
-            function revertResBut(){ //revert style back to original for tab2
-                document.getElementById("resBut").style.backgroundColor =  //***
-                "rgba(255, 255, 255, 0.7)" /*transparent white*/;  //***
-            }
-            function changeApplyBut(){  //***
-                document.getElementById("applyBut").style.backgroundColor =  //***
-                "#87ceeb" /*sky blue*/;  //***
-            }
-            function revertApplyBut(){ //revert style back to original for tab2
-                document.getElementById("applyBut").style.backgroundColor =  //***
-                "rgba(255, 255, 255, 0.7)" /*transparent white*/;  //***
-            }
-            function changeMoreBut(){  //***
-                document.getElementById("moreBut").style.backgroundColor =  //***
-                "#87ceeb" /*sky blue*/;  //***
-            }
-            function revertMoreBut(){ //revert style back to original for tab2
-                document.getElementById("moreBut").style.backgroundColor =  //***
-                "rgba(255, 255, 255, 0.7)" /*transparent white*/;  //***
+
+            function hoverOut(id) {
+                document.getElementById(id).style.backgroundColor =  "rgba(255, 255, 255, 0.7)" /*transparent white*/;
             }
         </script>
         <style>
@@ -209,15 +176,13 @@
                         ?> >
                     </div>
                     <div class='col-sm-3 col-sm-offset-1'>
-                        <button id="formBut" type='submit' class='btn btn-default' onmouseover='changeSubBut()' onmouseout='revertSubBut()'
+                        <button id="submit" type='submit' class='btn btn-default' onmouseover="hoverOver('submit')" onmouseout="hoverOut('submit')"
                                                                     style = "height: 30px;
                                                                     font-weight: bold;
                                                                     font-family: monospace;
                                                                     background-color: rgba(255, 255, 255, 0.45);
                                                                     border: solid 3px;
-                                                                    border-radius: 10px;">
-                        Submit
-                        </button>
+                                                                    border-radius: 10px;">Submit</button>
                     </div>
                 </div>
             </form>
@@ -225,14 +190,13 @@
 
         <!--download button -->
         <div align="right">
-            <button class="btn btn-default" id="resBut" onmouseover="changeResBut()" onmouseout="revertResBut()" style="height: 30px; font-weight: bold; font-family: monospace; background-color: rgba(255, 255, 255, 0.45); border: solid 3px; border-radius: 10px;">
-                <a style="color:black; text-decoration:none;" href="index.php">Restart</a>
-            </button>
-            <button class="btn btn-default" id="downBut" onmouseover="changeDownBut()" onmouseout="revertDownBut()" style="height: 30px;font-weight: bold; font-family: monospace; background-color: rgba(255, 255, 255, 0.45); border: solid 3px;border-radius: 10px;">
-                <a style="color:black; text-decoration:none;" href="<?php echo $downloadURL ?>">Download Results</a>
+            <button class="btn btn-default" id="download_csv" onmouseover="hoverOver('download_csv')" onmouseout="hoverOut('download_csv')" style="height: 30px;font-weight: bold; font-family: monospace; background-color: rgba(255, 255, 255, 0.45); border: solid 3px;border-radius: 10px;">
+                <a style="color:black; text-decoration:none;" href="<?php echo $downloadURL . "&dl_txt=0" ?>">Download (CSV)</a>
+            </button>&nbsp;
+            <button class="btn btn-default" id="download_zip" onmouseover="hoverOver('download_zip')" onmouseout="hoverOut('download_zip')" style="height: 30px;font-weight: bold; font-family: monospace; background-color: rgba(255, 255, 255, 0.45); border: solid 3px;border-radius: 10px;">
+                <a style="color:black; text-decoration:none;" href="<?php echo $downloadURL . "&dl_txt=1" ?>">Download (CSV + TXTs)</a>
             </button>&nbsp;
         </div>
-
         <hr>
 
         <!-- display query results as table -->
