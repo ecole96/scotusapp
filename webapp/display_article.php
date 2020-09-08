@@ -127,14 +127,6 @@
         <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
         <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
         <script>
-			function changeResBut(){  //***
-				document.getElementById("resBut").style.backgroundColor =  //***
-				"#87ceeb" /*sky blue*/;  //***
-			}
-			function revertResBut(){ //revert style back to original for tab2
-				document.getElementById("resBut").style.backgroundColor =  //***
-				"rgba(255, 255, 255, 0.7)" /*transparent white*/;  //***
-            }
             function ir_marking() { // function 
                 $.ajax({
                     type: "POST",
@@ -214,13 +206,6 @@
         <!-- header -->
         <div style="background-color: #fffacd; padding: 30px; text-align: center;">  <!--***-->
             <h1 style="font-size: 50px; font-family: monospace; font-weight: bold;"><a href='index.php' style='color:black;'>SCOTUSApp</a></h1>  <!--***-->
-            <div align="right">
-                <a style="color:black; text-decoration:none;" href="index.php">
-                <button class="btn btn-default" id="resBut" onmouseover="changeResBut()" onmouseout="revertResBut()" style="height: 30px; font-weight: bold; font-family: monospace; background-color: rgba(255, 255, 255, 0.45); border: solid 3px; border-radius: 10px;">
-                Restart
-                </button>
-                </a>
-            </div>
             <hr>
         </div>
         <div class='container'>
