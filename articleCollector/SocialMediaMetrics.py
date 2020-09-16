@@ -43,7 +43,7 @@ class SocialMediaMetrics():
                 json = self.downloadJSON(url,method,headers,data,source)
                 if not json: return None
             elif source == 'fb' and code == 403:
-                code = request['error']['code']
+                code = request.json()['error']['code']
                 if code in [4,17,32,613]: 
                     print("Sleeping for an hour due to Facebook rate limit...")
                     time.sleep(3605) 
