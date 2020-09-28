@@ -99,8 +99,8 @@ class TopicSites:
             else:
                 for h in headlines:
                     try:
-                        if not h['href'].startswith("/videos/") and "/live-news/" not in h['href']: # keeping video and live blogs out of the feed
-                            url = "https://www.cnn.com" + h['href']
+                        url = "https://www.cnn.com" + h['href']
+                        if not any(category in url for category in ["/videos/","/live-news/","/rss/"]):  # keeping video and live blogs out of the feed
                             title = h.text.strip()
                             s = Scraper(url,title,None,None,[])
                             self.pages.append(s) # build list of pages to scrape
@@ -291,14 +291,15 @@ class TopicSites:
             for p in pages:
                 try:
                     url = "https://www.nytimes.com" + p.find("a")['href']
-                    title = p.find("h2").text.strip()
-                    a = p.select_one("span.css-1n7hynb")
-                    if a:
-                        author = a.text.strip()
-                    else:
-                        author = None
-                    s = Scraper(url,title,author,None,[])
-                    self.pages.append(s)
+                    if not any(category in url for category in ["/video/","/live/"]):
+                        title = p.find("h2").text.strip()
+                        a = p.select_one("span.css-1n7hynb")
+                        if a:
+                            author = a.text.strip()
+                        else:
+                            author = None
+                        s = Scraper(url,title,author,None,[])
+                        self.pages.append(s)
                 except Exception as e:
                     print("SCRAPING ERROR:",e)
                     error_code = 1

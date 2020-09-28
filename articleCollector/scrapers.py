@@ -110,7 +110,7 @@ class Scraper:
     # scraper for CNN
     # all of these scraping functions are pretty similar, so I'm not commenting on the others unless there's a noticable difference (read the BeautifulSoup docs too)
     def cnn(self,soup,tz):
-        if any(category in self.url for category in ["/videos/","/live-news/"]): # non-article links - no text to be scraped, DROPPED
+        if any(category in self.url for category in ["/videos/","/live-news/","/rss/"]): # non-article links - no text to be scraped, DROPPED
             print("Rejected - link is not an article")
             article, error_code = None, 2 # we don't want non-articles anyway, so scraper fails but don't sound alarm or attempt to rescrape with generic scraper
         else:
@@ -153,42 +153,46 @@ class Scraper:
         return article,error_code
 
     def nytimes(self,soup,tz):
-        junk = soup.select("div.g-tracked-refer, div.g-container")
-        for j in junk: j.decompose()
-        if not self.title or self.title.split()[-1] == "...":
-            t = soup.find("meta",property="og:title")
-            if t:
-                scrapedTitle = t.get("content").strip()
-                if self.title:
-                    self.title = replaceTitle(self.title,scrapedTitle)
-                else:
-                    self.title = scrapedTitle
-        if not self.author:
-            a = soup.find("meta", {"name":"byl"})
-            if a:
-                self.author = ' '.join(a['content'].split()[1:])
-        if not self.date:
-            d = soup.find("meta",{"property":"article:published"})
-            if d:
-                self.date = tz.fromutc(datetime.datetime.strptime(d['content'].strip(),"%Y-%m-%dT%H:%M:%S.%fZ")).strftime("%Y-%m-%d %H:%M:%S")
-        if not self.images:
-            i = soup.find(itemprop="image")
-            if i:
-                i = i.get("content")
-                self.images.append(i)
-        paragraphs = []
-        p_select = soup.select("section[name=articleBody] p")
-        if not p_select: p_select = soup.find_all("p",{"class":["g-body","graphic-text"]})
-        for ps in p_select:
-            ptext = ps.text.strip()
-            if len(ptext) > 0:
-                paragraphs.append(ptext)
-        text = '\n\n'.join(paragraphs)
-        if text == '':
-            print("Rejected - likely bad scraping job (no article text)")
-            article,error_code = None, 1
+        if any(category in self.url for category in ["/video/","/live/"]): # non-article links - no text to be scraped, DROPPED
+            print("Rejected - link is not an article")
+            article, error_code = None, 2 # we don't want non-articles anyway, so scraper fails but don't sound alarm or attempt to rescrape with generic scraper
         else:
-            article,error_code = Article(self.title,self.author,self.date,self.url,self.source,text,self.images), 0
+            junk = soup.select("div.g-tracked-refer, div.g-container")
+            for j in junk: j.decompose()
+            if not self.title or self.title.split()[-1] == "...":
+                t = soup.find("meta",property="og:title")
+                if t:
+                    scrapedTitle = t.get("content").strip()
+                    if self.title:
+                        self.title = replaceTitle(self.title,scrapedTitle)
+                    else:
+                        self.title = scrapedTitle
+            if not self.author:
+                a = soup.find("meta", {"name":"byl"})
+                if a:
+                    self.author = ' '.join(a['content'].split()[1:])
+            if not self.date:
+                d = soup.find("meta",{"property":"article:published"})
+                if d:
+                    self.date = tz.fromutc(datetime.datetime.strptime(d['content'].strip(),"%Y-%m-%dT%H:%M:%S.%fZ")).strftime("%Y-%m-%d %H:%M:%S")
+            if not self.images:
+                i = soup.find(itemprop="image")
+                if i:
+                    i = i.get("content")
+                    self.images.append(i)
+            paragraphs = []
+            p_select = soup.select("section[name=articleBody] p")
+            if not p_select: p_select = soup.find_all("p",{"class":["g-body","graphic-text"]})
+            for ps in p_select:
+                ptext = ps.text.strip()
+                if len(ptext) > 0:
+                    paragraphs.append(ptext)
+            text = '\n\n'.join(paragraphs)
+            if text == '':
+                print("Rejected - likely bad scraping job (no article text)")
+                article,error_code = None, 1
+            else:
+                article,error_code = Article(self.title,self.author,self.date,self.url,self.source,text,self.images), 0
         return article,error_code
 
     def latimes(self,soup,tz):
