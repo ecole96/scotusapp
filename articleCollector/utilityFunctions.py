@@ -94,6 +94,8 @@ def getSource(url):
     subdomain = ext.subdomain.replace('www','')
     if source in ['iheart','radio','cbslocal','go'] or (source == 'timesofisrael' and subdomain and subdomain != 'blogs'): # exceptions with subdomains
         source = '.'.join([subdomain,source,ext.suffix])
+        if source.startswith("."): # iheart and radio links sometimes have no station subdomain, so just revert back to primary domain
+            source = ext.domain
     elif source in ['spectator','abc','standard','thestar','inquirer','thegazette']: # exceptions that need the suffixes
         source = '.'.join([source,ext.suffix])
     return source
