@@ -17,15 +17,17 @@
         // intervals follows $label=>postfix format
         // label is how the time interval is displayed on the table
         // postfix is the respective string at the end of each metric column in the database to differentiate between time intervals
-        $intervals=array("Initial Entry"=>"initial","Day 1"=>"d1","Day 7"=>"d7"); 
+        $intervals=array("Initial Entry"=>"initial","Day 1"=>"d1","Day 7"=>"d7","Post 7 Days"=>"d8+"); 
         foreach($intervals as $label=>$postfix) {
-            $html .= "<tr><th>$label</th>";
-            foreach($headers as $label=>$colname) {
-                $colname .= "_$postfix";
-                $data = isset($row[$colname]) ? $row[$colname] : "N/A";
-                $html .= "<td>$data</td>";
+            if (!(substr(reset($headers), 0, 3) == 'tw_' && $postfix == 'd8+')) { // don't put post 7 days row in twitter stats
+                $html .= "<tr><th>$label</th>";
+                foreach($headers as $label=>$colname) {
+                    $colname .= "_$postfix";
+                    $data = isset($row[$colname]) ? $row[$colname] : "N/A";
+                    $html .= "<td>$data</td>";
+                }
+                $html .= "</tr>";
             }
-            $html .= "</tr>";
         }
         $html .= "</table>";
         return $html;
@@ -374,7 +376,7 @@
                             <?php
                                 $headers = array("Posts"=>"rdt_posts","Total Comments"=>"rdt_total_comments","Total Scores"=>"rdt_total_scores",
                                 "Top Comments"=>"rdt_top_comments","Top Score"=>"rdt_top_score","Top Ratio"=>"rdt_top_ratio","Average Ratio"=>"rdt_avg_ratio");
-                                echo generate_SMM_table($headers,$row) ?>
+                                echo generate_SMM_table($headers,$row);?>
                         </div>
                     </div>
                     <div id="similar_articles" class="box" style="margin-top:1.25%;">
