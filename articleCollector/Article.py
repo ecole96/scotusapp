@@ -349,9 +349,9 @@ class Article:
     def isRelevant(self,clf,v_text,v_title):
         instantTerms = ["usa supreme court", "us supreme court", "u.s. supreme court", "united states supreme court", "scotus",
                     'john roberts', 'anthony kennedy', 'clarence thomas', 'ruth bader ginsburg', 'stephen breyer', 
-                    'samuel alito', 'sonia sotomayor', 'elena kagan', 'neil gorsuch', 'brett kavanaugh', "antonin scalia"] # dead giveaways for relevancy
+                    'samuel alito', 'sonia sotomayor', 'elena kagan', 'neil gorsuch', 'brett kavanaugh', "antonin scalia", 'amy coney barrett'] # dead giveaways for relevancy
         justice_keys = ['roberts', 'kennedy', 'thomas', 'ginsburg', 'breyer', 'alito', 
-                        'sotomayor', 'kagan', 'gorsuch', 'kavanaugh','scalia'] # last names of the justices for parsing in keywords
+                        'sotomayor', 'kagan', 'gorsuch', 'kavanaugh','scalia','barrett'] # last names of the justices for parsing in keywords
         instantSources = ["scotusblog"]
         # check for the "dead giveaways"
         if any(term in self.title.lower() for term in (instantTerms + justice_keys)) or self.source in instantSources:
