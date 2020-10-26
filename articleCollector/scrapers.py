@@ -4,6 +4,7 @@ from utilityFunctions import *
 import newspaper
 import ssl
 import datetime
+from datetime import timedelta
 import re
 
 # This class deals with the scraping aspects of the project, using both generic (Newspaper-powered) and targeted methods
@@ -25,7 +26,7 @@ class Scraper:
     # driver function for scraping
     def scrape(self,c,driver,tz):
         # if the page to be scraped is from a source we've already written an individual scraper, use that scraper
-        specialSources = ["apnews","cnn","nytimes","jdsupra","latimes","politico","thehill","chicagotribune","wsj"]
+        specialSources = ["apnews","cnn","nytimes","jdsupra","latimes","politico","thehill","chicagotribune","wsj","mondaq"]
         if self.source in specialSources:
             article,error_code = self.specificScraper(c,driver,tz)
             if article is None and error_code == 1: # fallback for specific scraper - if it fails, then attempt again using the generic scraper
@@ -196,6 +197,7 @@ class Scraper:
         return article,error_code
 
     def latimes(self,soup,tz):
+        hs = True if "highschool.latimes.com" in self.url else False # checks whether article comes from "High School Insider" subsite (formatted differently than standard LA Times articles)
         if not self.title or self.title.split()[-1] == "...":
             t = soup.find("meta",property="og:title")
             if t:
@@ -205,21 +207,27 @@ class Scraper:
                 else:
                     self.title = scrapedTitle
         if not self.author:
-            a = soup.select_one("div.author-name a")
+            a = soup.select_one("div.author-name a") if not hs else soup.select_one("a.author")
             if a:
                 self.author = a.text.strip()
         if not self.date:
-            d = soup.find("meta",property="article:published_time")
+            d = soup.find("meta",property="article:published_time") if not hs else soup.select_one("time.published")
             if d:
-                datestr = d.get("content").strip()
+                datestr = d.get("content").strip() if not hs else d.get("datetime").strip()
                 if "." in datestr: datestr = datestr.split(".")[0]
-                self.date = tz.fromutc(datetime.datetime.strptime(datestr,"%Y-%m-%dT%H:%M:%S")).strftime("%Y-%m-%d %H:%M:%S")
+                if not hs:
+                    self.date = tz.fromutc(datetime.datetime.strptime(datestr,"%Y-%m-%dT%H:%M:%S")).strftime("%Y-%m-%d %H:%M:%S")
+                else:
+                    dt_regex = re.match(r'(^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})-(\d{2}):\d{2}$',datestr).groups() # get basic datetime str and UTC offset
+                    utc_offset = int(dt_regex[1])
+                    dt_utc = datetime.datetime.strptime(dt_regex[0],"%Y-%m-%dT%H:%M:%S") + timedelta(hours=utc_offset) # convert to UTC
+                    self.date = tz.fromutc(dt_utc).strftime("%Y-%m-%d %H:%M:%S") # localize to Eastern time
         if not self.images:
             i = soup.find("meta",property="og:image")
             if i:
                 img_url = i.get("content").strip()
                 self.images.append(img_url)
-        container = soup.select_one("div.rich-text-article-body-content")
+        container = soup.select_one("div.rich-text-article-body-content") if not hs else soup.select_one("div.entry-content")
         paragraphs = [p.text.strip() for p in container.find_all("p",attrs={'class': None}) if len(p.text.strip()) != 0]
         text = '\n\n'.join(paragraphs)
         if text == '':
@@ -228,7 +236,7 @@ class Scraper:
         else:
             article,error_code = Article(self.title,self.author,self.date,self.url,self.source,text.strip(),self.images), 0
         return article,error_code
-            
+
     def jdsupra(self,soup,tz):
         if not self.title or self.title.split()[-1] == "...":
             t = soup.select_one("h1.doc_name.f2-ns.f3.mv0")
@@ -440,6 +448,33 @@ class Scraper:
                 image = i.get("content").strip()
                 self.images.append(image)
         paragraphs = [p.text.strip() for p in soup.select("div.Article p") ]
+        text = '\n\n'.join(paragraphs)
+        if text == '':
+            print("Text is empty - likely bad scraping job (no article text)")
+            article, error_code = None, 1
+        else:
+            article,error_code = Article(self.title,self.author,self.date,self.url,self.source,text,self.images), 0
+        return article,error_code
+
+    def mondaq(self,soup,tz):
+        if not self.title:
+            t = soup.find("meta",property="og:title")
+            if t: self.title = t.get("content").strip()
+        if not self.author:
+            a = soup.select_one("div.author_headline span")
+            if a: self.author = a.text.strip()
+        if not self.date:
+            d = soup.select_one("div.article_date")
+            if d:
+                datestr = d.text.strip() + " 00:00:00"
+                self.date = datetime.datetime.strptime(datestr,"%d %B %Y %H:%M:%S")
+        if not self.images:
+            i = soup.find("meta",property="og:image")
+            if i:
+                image = i.get("content").strip()
+                self.images.append(image)
+        text_container = soup.select_one("div.article-body")
+        paragraphs = [p.text.strip().replace('\r\n',' ') for p in text_container.find_all(["p","h3"])]
         text = '\n\n'.join(paragraphs)
         if text == '':
             print("Text is empty - likely bad scraping job (no article text)")
