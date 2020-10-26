@@ -113,11 +113,11 @@ class TopicSites:
     def collectPolitico(self,pageRange):
         error_code = 0
         for i in range(pageRange[0],pageRange[1] + 1):
-            url = "https://www.politico.com/news/supreme-court/" + str(i)
+            url = "https://www.politico.com/news/us-supreme-court/" + str(i)
             soup = downloadPage(url)
             if not soup: error_code = 2
             else:
-                pages = soup.select("ul.story-frag-list.layout-grid.grid-3 li div.summary")
+                pages = soup.select("article.story-frag")
                 if not pages: error_code = 1
                 else:
                     for p in pages:
@@ -408,44 +408,39 @@ class TopicSites:
 
     def collectWSJ(self,pageRange):
         error_code = 0
-        max_date = datetime.datetime.today()
-        min_date = (max_date - datetime.timedelta(days=2)).strftime('%Y/%m/%d') # searching for articles published in the last two days
-        max_date = max_date.strftime('%Y/%m/%d')
-        for i in range(pageRange[0],pageRange[1]+1):
-            url = "https://www.wsj.com/search/term.html?KEYWORDS=supreme%20court&min-date=" + min_date + "&max-date=" + max_date + "&isAdvanced=true&daysback=2d&andor=AND&sort=relevance&source=wsjarticle,wsjblogs&page=" + str(i)
-            soup = downloadPage(url)
-            if not soup: error_code = 2
-            else:
-                # WSJ has some funkiness (maybe an actual error) in their formatting on the search page that makes BeautifulSoup parsing tricky
-                # so we have to convert our soup object to a str and manipulate the HTML to parse it properly
-                soupstr = str(soup)
-                find = soupstr.find('<div class="search-results-sector"') # what we want starts at the beginning of this element
-                if not find > -1:
-                    error_code = 1
+        si = SeleniumInstance()
+        si.initializeDriver() # as of October 26, 2020 Selenium is required to scrape this page
+        if not si.driver:
+            error_code = 1
+        else:
+            for i in range(pageRange[0],pageRange[1]+1):
+                url = "https://www.wsj.com/search?query=supreme%20court&operator=AND&sort=relevance&duration=2d&source=wsjie%2Cblog&page=" + str(i)
+                soup = alt_downloadPage(si.driver,url,'div.WSJTheme--SearchResultPaginationHeader--3KIiXWx4,div.WSJTheme--no-result--mNcujucR')
+                if not soup: error_code = 1
                 else:
-                    soupstr = "<html>" + soupstr[find:] # create an easily-parsable HTML document out of the remainder of the page
-                    soup = BeautifulSoup(soupstr,"html.parser") #...and convert it to a Soup for scraping (now it's business as usual)
-                    pages = soup.select("div.item-container")
-                    if not pages and not soup.select_one("li.no-results"): error_code = 1 # empty pages array does not necessarily mean scraper failure (no relevant articles in the last few days is also a possibility)
+                    pages = soup.select('div[id="root"] article')
+                    if not pages and not soup.select_one("div.WSJTheme--no-result--mNcujucR"): # this tells us there is an issue and not just a case of no articles in the 2 day timespan
+                        error_code = 1
                     for p in pages:
                         try:
-                            c = p.select_one("div.category")
+                            c = p.select_one("li.WSJTheme--type--3JhCic1c")
                             if c:
                                 category = c.text.strip().lower()
                                 blockedCategories = ["u.k.","india","latin america","europe","world","photos","corrections & amplifications"] # search results in these categories are useless to us
                                 if category not in blockedCategories:
-                                    h = p.select_one("h3.headline a")
+                                    h = p.select_one("h3 a")
                                     title = h.text.strip()
-                                    url = "https://www.wsj.com" + h['href'].split('?')[0]
+                                    url = h['href']
                                     author = None
-                                    a = p.select_one("li.byline")
+                                    a = p.select_one("p.WSJTheme--byline--1oIUvtQ3")
                                     if a:
-                                        author = a.text.strip()[3:]
+                                        author = a.text.strip()
                                     s = Scraper(url,title,author,None,[])
                                     self.pages.append(s)
                         except Exception as e:
                             error_code = 1
                             print("SCRAPING ERROR;",e)
+            si.driver.quit()
         return error_code
 
     def collectAP(self):
