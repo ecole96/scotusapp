@@ -44,7 +44,7 @@ class SeleniumInstance:
             try:
                 login_url = "https://accounts.wsj.com/login"
                 self.driver.get(login_url)
-                wait = WebDriverWait(self.driver,10)
+                wait = WebDriverWait(self.driver,30)
                 element_present = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR,"button.basic-login-submit"))) # wait until login button is visible to begin typing credentials
                 self.driver.find_element_by_name("username").send_keys(os.environ['WSJ_EMAIL']) # send credentials
                 self.driver.find_element_by_name("password").send_keys(os.environ['WSJ_PASSWORD'])

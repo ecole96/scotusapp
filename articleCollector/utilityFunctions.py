@@ -27,7 +27,6 @@ from pydrive.drive import GoogleDrive
 # download a webpage using BeautifulSoup
 # returns soup object we can parse
 def downloadPage(url):
-    #user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_1) AppleWebKit/602.2.14 (KHTML, like Gecko) Version/10.0.1 Safari/602.2.14'
     user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36'
     try:
         request = requests.get(url,headers={'User-Agent':user_agent})
@@ -43,7 +42,7 @@ def alt_downloadPage(driver,url,waitElement):
     try:
         driver.get(url)
         if waitElement: #waitElement is an element on a seleniumSource webpage that we use to confirm a site loaded successfully
-            wait = WebDriverWait(driver,10)
+            wait = WebDriverWait(driver,30)
             element_present = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR,waitElement)))
         page = driver.page_source
         soup = BeautifulSoup(page, 'lxml')
