@@ -122,7 +122,7 @@ def printBasicInfo(title,url):
 
 # checks whether an article is from a known "bad" source - usually aggregate sites, paywalled sites, or obscure sites that don't scrape well and aren't worth writing a scraper for
 def isBlockedSource(url):
-    blockedSources = ['law360','law','freerepublic','bloomberglaw','nakedcapitalism','independent','mentalfloss','columbustelegram'] 
+    blockedSources = ['law360','law','freerepublic','bloomberglaw','nakedcapitalism','independent','mentalfloss','columbustelegram','amarketnews'] 
     if "howappealing.abovethelaw.com" in url or getSource(url) in blockedSources:
         print("Rejected - URL/source known to have a paywall, or does not contain full articles")
         return True
