@@ -371,7 +371,7 @@ class Scraper:
         return article,error_code
 
     def chicagotribune(self,soup,tz):
-        if not self.title:
+        if not self.title or self.title.split()[-1] == "...":
             t = soup.find("meta",property="og:title")
             if t: self.title = t.get("content")
         if not self.author:
@@ -398,7 +398,7 @@ class Scraper:
         return article,error_code
 
     def wsj(self,soup,tz):
-        if not self.title:
+        if not self.title or self.title.split()[-1] == "...":
             t = soup.find("meta",{"name":"article.headline"})
             if t: self.title = t.get("content").strip()
         if not self.author:
@@ -428,7 +428,7 @@ class Scraper:
         return article,error_code
     
     def apnews(self,soup,tz):
-        if not self.title:
+        if not self.title or self.title.split()[-1] == "...":
             t = soup.find("meta",property="og:title")
             if t: self.title = t.get("content").strip()
         if not self.author:
@@ -457,9 +457,12 @@ class Scraper:
         return article,error_code
 
     def mondaq(self,soup,tz):
-        if not self.title:
-            t = soup.find("meta",property="og:title")
-            if t: self.title = t.get("content").strip()
+        if not self.title or self.title.split()[-1] == "...":
+            t = soup.select_one("div.article-title")
+            if t: 
+                junk = soup.select_one("span.region-heading")
+                if junk: junk.decompose()
+                self.title = t.text.strip()
         if not self.author:
             a = soup.select_one("div.author_headline span")
             if a: self.author = a.text.strip()
@@ -467,7 +470,7 @@ class Scraper:
             d = soup.select_one("div.article_date")
             if d:
                 datestr = d.text.strip() + " 00:00:00"
-                self.date = datetime.datetime.strptime(datestr,"%d %B %Y %H:%M:%S")
+                self.date = datetime.datetime.strptime(datestr,"%d %B %Y %H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
         if not self.images:
             i = soup.find("meta",property="og:image")
             if i:
