@@ -132,8 +132,11 @@ class Article:
             text_similarity = [1. - i for i in squareform(pdist(X.toarray(), 'cosine'))[0]] 
             for i in range(1,len(text_similarity)): # skip first element since it's our new article
                 if text_similarity[i] >= 0.5: # similar found (50% similarity threshold, could be raised later on)
-                    c.execute("""INSERT INTO similar_articles(article1,article2,similarity) VALUES (%s,%s,%s)""",(idArticle,IDs[i],text_similarity[i],))
                     self.similar_articles.append((IDs[i],round(text_similarity[i],3)))
+                    # check if similarity relationship already exists (it shouldn't)
+                    c.execute("""SELECT idMatch FROM similar_articles WHERE (article2=%s AND article1=%s) OR (article1=%s AND article2=%s)""",(idArticle,IDs[i],idArticle,IDs[i]))
+                    if c.rowcount == 0:
+                        c.execute("""INSERT INTO similar_articles(article1,article2,similarity) VALUES (%s,%s,%s)""",(idArticle,IDs[i],text_similarity[i],))
         except Exception as e:
             print("Error generating similar articles:",e)
 
