@@ -2,6 +2,8 @@
 
 SCOTUSApp is an academic research web application commissioned by Dr. Michael Zilis and Dr. Justin Wedeking of the University of Kentucky Political Science Department. SCOTUSApp finds, stores, and analyzes articles pertaining to the United States Supreme Court. It is currently developed by Evan Cole.
 
+Access is currently limited to project personnel, but here is a video demo of the web application: https://www.youtube.com/watch?v=2dJ6OLiUmuA
+
 The application consists of three major components:
 
 ### Article Collector (/articleCollector/) [Python + helper shell scripts]
